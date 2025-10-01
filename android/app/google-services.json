@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "208519200949",
+    "project_id": "servipak-1",
+    "storage_bucket": "servipak-1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:208519200949:android:28e0d08fed06ab3c64fefc",
+        "android_client_info": {
+          "package_name": "com.example.servipak"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdQiCrFge6Y9me6M_9c_gGE31N_moWHaU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
