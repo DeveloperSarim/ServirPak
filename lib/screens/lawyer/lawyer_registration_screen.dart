@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -428,10 +429,21 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(60),
-                              child: Image.file(
-                                _profileImage!,
-                                fit: BoxFit.cover,
-                              ),
+                              child: kIsWeb
+                                  ? Image.network(
+                                      _profileImage!.path,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(
+                                                Icons.person,
+                                                size: 60,
+                                              ),
+                                    )
+                                  : Image.file(
+                                      _profileImage!,
+                                      fit: BoxFit.cover,
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 16),

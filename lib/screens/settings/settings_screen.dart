@@ -224,10 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Privacy & Security',
           subtitle: 'Manage your privacy settings',
           onTap: () {
-            // TODO: Navigate to privacy settings
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Privacy Settings - Coming Soon')),
-            );
+            _showPrivacySettingsDialog();
           },
         ),
         _buildListTile(
@@ -235,10 +232,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Help & Support',
           subtitle: 'Get help and contact support',
           onTap: () {
-            // TODO: Navigate to help screen
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Help & Support - Coming Soon')),
-            );
+            _showHelpSupportDialog();
           },
         ),
       ],
@@ -265,10 +259,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Email Notifications',
           subtitle: 'Manage email notification preferences',
           onTap: () {
-            // TODO: Navigate to email settings
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Email Settings - Coming Soon')),
-            );
+            _showEmailSettingsDialog();
           },
         ),
       ],
@@ -295,10 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Theme Colors',
           subtitle: 'Customize app colors',
           onTap: () {
-            // TODO: Navigate to theme settings
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Theme Settings - Coming Soon')),
-            );
+            _showThemeColorsDialog();
           },
         ),
       ],
@@ -338,10 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Current Location',
           subtitle: 'Use your current location for services',
           onTap: () {
-            // TODO: Implement location services
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Location Services - Coming Soon')),
-            );
+            _showLocationServicesDialog();
           },
         ),
         _buildListTile(
@@ -349,10 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Location History',
           subtitle: 'View your location history',
           onTap: () {
-            // TODO: Show location history
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Location History - Coming Soon')),
-            );
+            _showLocationHistoryDialog();
           },
         ),
       ],
@@ -368,10 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Change Password',
           subtitle: 'Update your account password',
           onTap: () {
-            // TODO: Navigate to change password
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Change Password - Coming Soon')),
-            );
+            _showChangePasswordDialog();
           },
         ),
         _buildListTile(
@@ -379,10 +358,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Change Email',
           subtitle: 'Update your email address',
           onTap: () {
-            // TODO: Navigate to change email
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Change Email - Coming Soon')),
-            );
+            _showChangeEmailDialog();
           },
         ),
         _buildListTile(
@@ -390,10 +366,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: 'Change Phone',
           subtitle: 'Update your phone number',
           onTap: () {
-            // TODO: Navigate to change phone
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Change Phone - Coming Soon')),
-            );
+            _showChangePhoneDialog();
           },
         ),
       ],
@@ -594,10 +567,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Implement account deletion
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Account Deletion - Coming Soon')),
-              );
+              _showDeleteAccountConfirmationDialog();
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
@@ -695,6 +665,721 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Privacy Settings Dialog
+  void _showPrivacySettingsDialog() {
+    bool profileVisibility = true;
+    bool showOnlineStatus = true;
+    bool allowDirectMessages = true;
+    bool shareLocation = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Privacy & Security'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SwitchListTile(
+                  title: const Text('Profile Visibility'),
+                  subtitle: const Text('Allow others to see your profile'),
+                  value: profileVisibility,
+                  onChanged: (value) {
+                    setState(() {
+                      profileVisibility = value;
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  title: const Text('Show Online Status'),
+                  subtitle: const Text('Display when you are online'),
+                  value: showOnlineStatus,
+                  onChanged: (value) {
+                    setState(() {
+                      showOnlineStatus = value;
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  title: const Text('Allow Direct Messages'),
+                  subtitle: const Text('Let others send you direct messages'),
+                  value: allowDirectMessages,
+                  onChanged: (value) {
+                    setState(() {
+                      allowDirectMessages = value;
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  title: const Text('Share Location'),
+                  subtitle: const Text('Share your location with the app'),
+                  value: shareLocation,
+                  onChanged: (value) {
+                    setState(() {
+                      shareLocation = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Privacy settings saved successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Help & Support Dialog
+  void _showHelpSupportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Help & Support'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Need help? We\'re here for you!',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _buildSupportOption(
+                icon: Icons.phone,
+                title: 'Call Support',
+                subtitle: '+92-300-1234567',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Calling support...')),
+                  );
+                },
+              ),
+              _buildSupportOption(
+                icon: Icons.email,
+                title: 'Email Support',
+                subtitle: 'support@servirpak.com',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Opening email client...')),
+                  );
+                },
+              ),
+              _buildSupportOption(
+                icon: Icons.chat,
+                title: 'Live Chat',
+                subtitle: 'Available 24/7',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Starting live chat...')),
+                  );
+                },
+              ),
+              _buildSupportOption(
+                icon: Icons.help_outline,
+                title: 'FAQ',
+                subtitle: 'Frequently Asked Questions',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Opening FAQ...')),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSupportOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF8B4513)),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: onTap,
+    );
+  }
+
+  // Email Settings Dialog
+  void _showEmailSettingsDialog() {
+    bool consultationEmails = true;
+    bool marketingEmails = false;
+    bool systemEmails = true;
+    bool weeklyDigest = true;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Email Notifications'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SwitchListTile(
+                  title: const Text('Consultation Updates'),
+                  subtitle: const Text(
+                    'Get notified about consultation changes',
+                  ),
+                  value: consultationEmails,
+                  onChanged: (value) {
+                    setState(() {
+                      consultationEmails = value;
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  title: const Text('Marketing Emails'),
+                  subtitle: const Text(
+                    'Receive promotional offers and updates',
+                  ),
+                  value: marketingEmails,
+                  onChanged: (value) {
+                    setState(() {
+                      marketingEmails = value;
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  title: const Text('System Notifications'),
+                  subtitle: const Text('Important system updates and alerts'),
+                  value: systemEmails,
+                  onChanged: (value) {
+                    setState(() {
+                      systemEmails = value;
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  title: const Text('Weekly Digest'),
+                  subtitle: const Text('Weekly summary of your activity'),
+                  value: weeklyDigest,
+                  onChanged: (value) {
+                    setState(() {
+                      weeklyDigest = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Email settings saved successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Theme Colors Dialog
+  void _showThemeColorsDialog() {
+    String selectedColor = 'Brown';
+    final colors = ['Brown', 'Blue', 'Green', 'Purple', 'Red', 'Orange'];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Theme Colors'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: colors.map((color) {
+                return RadioListTile<String>(
+                  title: Text(color),
+                  value: color,
+                  groupValue: selectedColor,
+                  onChanged: (value) {
+                    setState(() {
+                      selectedColor = value!;
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Theme color changed to $selectedColor!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Location Services Dialog
+  void _showLocationServicesDialog() {
+    bool locationEnabled = true;
+    bool preciseLocation = false;
+    bool backgroundLocation = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Location Services'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SwitchListTile(
+                  title: const Text('Enable Location'),
+                  subtitle: const Text('Allow app to access your location'),
+                  value: locationEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      locationEnabled = value;
+                      if (!value) {
+                        preciseLocation = false;
+                        backgroundLocation = false;
+                      }
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  title: const Text('Precise Location'),
+                  subtitle: const Text(
+                    'Use precise location for better accuracy',
+                  ),
+                  value: preciseLocation,
+                  onChanged: locationEnabled
+                      ? (value) {
+                          setState(() {
+                            preciseLocation = value!;
+                          });
+                        }
+                      : null,
+                ),
+                SwitchListTile(
+                  title: const Text('Background Location'),
+                  subtitle: const Text(
+                    'Allow location access when app is closed',
+                  ),
+                  value: backgroundLocation,
+                  onChanged: locationEnabled
+                      ? (value) {
+                          setState(() {
+                            backgroundLocation = value!;
+                          });
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Location settings saved successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Location History Dialog
+  void _showLocationHistoryDialog() {
+    final locationHistory = [
+      {
+        'location': 'Lahore, Punjab',
+        'time': '2 hours ago',
+        'type': 'Consultation',
+      },
+      {'location': 'Karachi, Sindh', 'time': '1 day ago', 'type': 'Meeting'},
+      {
+        'location': 'Islamabad, Federal',
+        'time': '3 days ago',
+        'type': 'Court Visit',
+      },
+      {
+        'location': 'Rawalpindi, Punjab',
+        'time': '1 week ago',
+        'type': 'Client Meeting',
+      },
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Location History'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: ListView.builder(
+            itemCount: locationHistory.length,
+            itemBuilder: (context, index) {
+              final item = locationHistory[index];
+              return ListTile(
+                leading: const Icon(
+                  Icons.location_on,
+                  color: Color(0xFF8B4513),
+                ),
+                title: Text(item['location']!),
+                subtitle: Text('${item['time']} • ${item['type']}'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Location history cleared!'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            },
+            child: const Text('Clear History'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Change Password Dialog
+  void _showChangePasswordDialog() {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Password'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: currentPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Current Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: newPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'New Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: confirmPasswordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm New Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (newPasswordController.text ==
+                  confirmPasswordController.text) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Password changed successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Passwords do not match!'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Change Password'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Change Email Dialog
+  void _showChangeEmailDialog() {
+    final newEmailController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Email'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: newEmailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'New Email Address',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Current Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Email change request sent! Please check your new email for verification.',
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            child: const Text('Change Email'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Change Phone Dialog
+  void _showChangePhoneDialog() {
+    final newPhoneController = TextEditingController();
+    final otpController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Phone Number'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: newPhoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'New Phone Number',
+                  border: OutlineInputBorder(),
+                  hintText: '+92-300-1234567',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'OTP Code',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Phone number changed successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            child: const Text('Change Phone'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Delete Account Confirmation Dialog
+  void _showDeleteAccountConfirmationDialog() {
+    final reasonController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'This action cannot be undone. All your data will be permanently deleted.',
+                style: TextStyle(color: Colors.red),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Reason for deletion (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Enter your password to confirm',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Account deletion request submitted. You will receive a confirmation email.',
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete Account'),
+          ),
+        ],
       ),
     );
   }

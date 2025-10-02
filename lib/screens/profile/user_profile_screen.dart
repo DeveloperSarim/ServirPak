@@ -156,14 +156,57 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget _buildProfileStats() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(child: _buildStatCard('Consultations', '0', Icons.chat)),
-          const SizedBox(width: 12),
-          Expanded(child: _buildStatCard('Cases', '0', Icons.folder)),
-          const SizedBox(width: 12),
-          Expanded(child: _buildStatCard('Reviews', '0', Icons.star)),
-        ],
+      child: StreamBuilder<QuerySnapshot>(
+        stream: _firestore
+            .collection(AppConstants.consultationsCollection)
+            .where('userId', isEqualTo: AuthService.currentUser?.uid ?? '')
+            .snapshots(),
+        builder: (context, snapshot) {
+          int totalConsultations = 0;
+          int completedConsultations = 0;
+          int pendingConsultations = 0;
+
+          if (snapshot.hasData) {
+            totalConsultations = snapshot.data!.docs.length;
+            for (var doc in snapshot.data!.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final status = data['status'] as String? ?? '';
+              if (status == 'completed') {
+                completedConsultations++;
+              } else if (status == 'pending') {
+                pendingConsultations++;
+              }
+            }
+          }
+
+          return Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Total',
+                  totalConsultations.toString(),
+                  Icons.chat,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  'Completed',
+                  completedConsultations.toString(),
+                  Icons.check_circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  'Pending',
+                  pendingConsultations.toString(),
+                  Icons.schedule,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -211,19 +254,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       child: Column(
         children: [
           _buildOptionTile('Edit Profile', Icons.edit, () {
-            // TODO: Navigate to edit profile
+            _showEditProfileDialog();
           }),
           _buildOptionTile('My Consultations', Icons.chat, () {
-            // TODO: Navigate to consultations
+            _showMyConsultations();
           }),
           _buildOptionTile('My Cases', Icons.folder, () {
-            // TODO: Navigate to cases
+            _showMyCases();
           }),
           _buildOptionTile('Payment History', Icons.payment, () {
-            // TODO: Navigate to payment history
+            _showPaymentHistory();
           }),
           _buildOptionTile('Help & Support', Icons.help, () {
-            // TODO: Navigate to help
+            _showHelpSupport();
           }),
           _buildOptionTile('About ServirPak', Icons.info, () {
             _showAboutDialog();
@@ -312,6 +355,267 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ),
       ),
     );
+  }
+
+  // Profile Option Handlers
+  void _showEditProfileDialog() {
+    final nameController = TextEditingController(
+      text: _currentUser?.name ?? '',
+    );
+    final phoneController = TextEditingController(
+      text: _currentUser?.phone ?? '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: phoneController,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              _updateProfile(nameController.text, phoneController.text);
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _updateProfile(String name, String phone) async {
+    try {
+      final user = AuthService.currentUser;
+      if (user != null) {
+        await _firestore
+            .collection(AppConstants.usersCollection)
+            .doc(user.uid)
+            .update({
+              'name': name,
+              'phone': phone,
+              'updatedAt': Timestamp.now(),
+            });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        _loadUserData(); // Reload user data
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showMyConsultations() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('My Consultations'),
+        content: StreamBuilder<QuerySnapshot>(
+          stream: _firestore
+              .collection(AppConstants.consultationsCollection)
+              .where('userId', isEqualTo: AuthService.currentUser?.uid ?? '')
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.data!.docs.isEmpty) {
+              return const Text('No consultations found.');
+            }
+
+            return SizedBox(
+              height: 300,
+              child: ListView.builder(
+                itemCount: snapshot.data!.docs.length,
+                itemBuilder: (context, index) {
+                  final doc = snapshot.data!.docs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      title: Text(data['type'] ?? 'Consultation'),
+                      subtitle: Text(data['description'] ?? ''),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(
+                            data['status'] ?? '',
+                          ).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          (data['status'] ?? '').toUpperCase(),
+                          style: TextStyle(
+                            color: _getStatusColor(data['status'] ?? ''),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMyCases() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('My Cases'),
+        content: const Text(
+          'Your case history and ongoing cases will be displayed here.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPaymentHistory() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Payment History'),
+        content: const Text(
+          'Your payment history and transaction details will be displayed here.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpSupport() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Help & Support'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.phone),
+              title: const Text('Call Support'),
+              subtitle: const Text('+92-300-911-911'),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Calling support...'),
+                    backgroundColor: Colors.blue,
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.email),
+              title: const Text('Email Support'),
+              subtitle: const Text('support@servirpak.com'),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Opening email...'),
+                    backgroundColor: Colors.blue,
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat),
+              title: const Text('Live Chat'),
+              subtitle: const Text('Chat with our support team'),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Opening live chat...'),
+                    backgroundColor: Colors.blue,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'completed':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'accepted':
+        return Colors.blue;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 
   void _showAboutDialog() {

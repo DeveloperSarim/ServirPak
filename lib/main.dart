@@ -6,6 +6,7 @@ import 'screens/splash_screen.dart';
 import 'services/city_service.dart';
 import 'services/theme_service.dart';
 import 'utils/debug_helper.dart';
+import 'themes/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,8 +44,8 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'ServirPak',
           debugShowCheckedModeBanner: false,
-          theme: AppThemes.lightTheme,
-          darkTheme: AppThemes.darkTheme,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.lightTheme, // Using light theme for now
           themeMode: themeService.themeMode,
           home: const SplashScreen(),
         );
