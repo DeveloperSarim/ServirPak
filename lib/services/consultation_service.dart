@@ -48,17 +48,28 @@ class ConsultationService {
     String userId,
   ) async {
     try {
+      print('🔍 ConsultationService: Getting consultations for user: $userId');
+      print('🔍 Collection: ${AppConstants.consultationsCollection}');
+
       QuerySnapshot snapshot = await _firestore
           .collection(AppConstants.consultationsCollection)
           .where('userId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs
-          .map((doc) => ConsultationModel.fromFirestore(doc))
-          .toList();
+      print('🔍 Query result: ${snapshot.docs.length} documents found');
+
+      List<ConsultationModel> consultations = snapshot.docs.map((doc) {
+        print('🔍 Document ID: ${doc.id}, Data: ${doc.data()}');
+        return ConsultationModel.fromFirestore(doc);
+      }).toList();
+
+      print(
+        '✅ ConsultationService: Returning ${consultations.length} consultations',
+      );
+      return consultations;
     } catch (e) {
-      print('Error getting consultations by user ID: $e');
+      print('❌ Error getting consultations by user ID: $e');
       return [];
     }
   }

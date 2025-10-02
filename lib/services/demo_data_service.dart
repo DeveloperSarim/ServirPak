@@ -4,6 +4,80 @@ import '../constants/app_constants.dart';
 class DemoDataService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // Add demo consultations for user
+  static Future<void> addDemoConsultationsForUser(String userId) async {
+    try {
+      final demoConsultations = [
+        {
+          'userId': userId,
+          'lawyerId': 'demo_lawyer_1',
+          'type': 'free',
+          'category': 'Family Law',
+          'description':
+              'Need consultation for divorce proceedings and child custody arrangements.',
+          'status': 'pending',
+          'price': 0.0,
+          'city': 'Karachi',
+          'scheduledAt': DateTime.now().add(const Duration(days: 2)),
+          'createdAt': DateTime.now().subtract(const Duration(days: 1)),
+          'updatedAt': DateTime.now(),
+        },
+        {
+          'userId': userId,
+          'lawyerId': 'demo_lawyer_2',
+          'type': 'paid',
+          'category': 'Criminal Law',
+          'description':
+              'Legal representation needed for traffic violation case.',
+          'status': 'accepted',
+          'price': 5000.0,
+          'city': 'Lahore',
+          'scheduledAt': DateTime.now().add(const Duration(days: 5)),
+          'createdAt': DateTime.now().subtract(const Duration(hours: 3)),
+          'updatedAt': DateTime.now(),
+        },
+        {
+          'userId': userId,
+          'lawyerId': 'demo_lawyer_3',
+          'type': 'premium',
+          'category': 'Property Law',
+          'description':
+              'Property dispute consultation and legal advice needed.',
+          'status': 'completed',
+          'price': 15000.0,
+          'city': 'Islamabad',
+          'scheduledAt': DateTime.now().subtract(const Duration(days: 1)),
+          'completedAt': DateTime.now().subtract(const Duration(hours: 2)),
+          'createdAt': DateTime.now().subtract(const Duration(days: 3)),
+          'updatedAt': DateTime.now(),
+        },
+        {
+          'userId': userId,
+          'lawyerId': 'demo_lawyer_4',
+          'type': 'paid',
+          'category': 'Business Law',
+          'description': 'Business contract review and legal documentation.',
+          'status': 'rejected',
+          'price': 8000.0,
+          'city': 'Karachi',
+          'scheduledAt': DateTime.now().add(const Duration(days: 7)),
+          'createdAt': DateTime.now().subtract(const Duration(hours: 6)),
+          'updatedAt': DateTime.now(),
+        },
+      ];
+
+      for (var consultation in demoConsultations) {
+        await _firestore
+            .collection(AppConstants.consultationsCollection)
+            .add(consultation);
+      }
+
+      print('✅ Demo consultations for user added successfully');
+    } catch (e) {
+      print('❌ Error adding demo consultations for user: $e');
+    }
+  }
+
   // Add demo consultations for lawyer
   static Future<void> addDemoConsultations(String lawyerId) async {
     try {

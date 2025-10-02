@@ -356,7 +356,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                 icon: const Icon(Icons.upload_file),
                 label: const Text('Document Upload Karein'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
+                  backgroundColor: const Color(0xFF8B4513),
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -374,7 +374,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
         title: const Text('Lawyer Registration'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.deepPurple,
+        foregroundColor: const Color(0xFF8B4513),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -475,7 +475,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                               icon: const Icon(Icons.photo_library),
                               label: const Text('Gallery'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.deepPurple,
+                                backgroundColor: const Color(0xFF8B4513),
                                 foregroundColor: Colors.white,
                               ),
                             ),
@@ -484,7 +484,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                               icon: const Icon(Icons.camera_alt),
                               label: const Text('Camera'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.deepPurple,
+                                backgroundColor: const Color(0xFF8B4513),
                                 foregroundColor: Colors.white,
                               ),
                             ),
@@ -509,7 +509,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple),
+                      borderSide: const BorderSide(color: Color(0xFF8B4513)),
                     ),
                   ),
                   validator: (value) {
@@ -533,7 +533,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple),
+                      borderSide: const BorderSide(color: Color(0xFF8B4513)),
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -561,7 +561,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple),
+                      borderSide: const BorderSide(color: Color(0xFF8B4513)),
                     ),
                   ),
                   validator: (value) {
@@ -584,7 +584,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple),
+                      borderSide: const BorderSide(color: Color(0xFF8B4513)),
                     ),
                   ),
                   items: _provinces.map((province) {
@@ -613,7 +613,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple),
+                      borderSide: const BorderSide(color: Color(0xFF8B4513)),
                     ),
                   ),
                   maxLines: 2,
@@ -632,7 +632,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple),
+                      borderSide: const BorderSide(color: Color(0xFF8B4513)),
                     ),
                   ),
                 ),
@@ -650,7 +650,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple),
+                      borderSide: const BorderSide(color: Color(0xFF8B4513)),
                     ),
                   ),
                   maxLines: 3,
@@ -703,7 +703,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submitRegistration,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: const Color(0xFF8B4513),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(

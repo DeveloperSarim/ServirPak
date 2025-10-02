@@ -387,7 +387,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   'Total Consultations',
                   totalConsultations.toString(),
                   Icons.assignment,
-                  Colors.purple,
+                  const Color(0xFF8B4513),
                 ),
                 _buildStatCard(
                   'Completed',

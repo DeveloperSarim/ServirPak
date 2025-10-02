@@ -54,6 +54,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
           padding: ResponsiveHelper.getResponsiveEdgeInsets(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Lawyer Info Card
               _buildLawyerInfoCard(),
@@ -69,6 +70,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
 
               // Book Button
               _buildBookButton(),
+              SizedBox(height: ResponsiveHelper.getResponsivePadding(context)),
             ],
           ),
         ),
@@ -268,36 +270,40 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
   }
 
   Widget _buildBookingForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Consultation Details',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+    return ResponsiveHelper.responsiveCard(
+      context: context,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Consultation Details',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // Consultation Type
-          _buildConsultationTypeSelector(),
-          const SizedBox(height: 16),
+            // Consultation Type
+            _buildConsultationTypeSelector(),
+            const SizedBox(height: 16),
 
-          // Legal Category
-          _buildCategorySelector(),
-          const SizedBox(height: 16),
+            // Legal Category
+            _buildCategorySelector(),
+            const SizedBox(height: 16),
 
-          // Date & Time Selection
-          _buildDateTimeSelector(),
-          const SizedBox(height: 16),
+            // Date & Time Selection
+            _buildDateTimeSelector(),
+            const SizedBox(height: 16),
 
-          // Description
-          _buildDescriptionField(),
-        ],
+            // Description
+            _buildDescriptionField(),
+          ],
+        ),
       ),
     );
   }
@@ -305,6 +311,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
   Widget _buildConsultationTypeSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
           'Consultation Type *',
@@ -312,11 +319,13 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
         ),
         const SizedBox(height: 8),
         Container(
+          constraints: const BoxConstraints(minHeight: 200, maxHeight: 300),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               _buildConsultationTypeTile(
                 AppConstants.freeConsultation,
@@ -342,7 +351,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                 AppConstants.consultationPricing[AppConstants
                     .premiumConsultation]!,
                 Icons.diamond,
-                Colors.purple,
+                const Color(0xFF8B4513),
               ),
             ],
           ),
@@ -369,49 +378,67 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
           color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
           border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected ? color : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(8),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isSelected ? color : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.grey,
+                  size: 20,
+                ),
               ),
-              child: Icon(
-                icon,
-                color: isSelected ? Colors.white : Colors.grey,
-                size: 20,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? color : Colors.black87,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    title,
+                    price == 0 ? 'Free' : 'PKR ${price.toStringAsFixed(0)}',
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.bold,
                       color: isSelected ? color : Colors.black87,
+                      fontSize: 14,
                     ),
                   ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
+                  if (isSelected) ...[
+                    const SizedBox(height: 4),
+                    Icon(Icons.check_circle, color: color, size: 16),
+                  ],
                 ],
               ),
-            ),
-            Text(
-              price == 0 ? 'Free' : 'PKR ${price.toStringAsFixed(0)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isSelected ? color : Colors.black87,
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (isSelected) Icon(Icons.check_circle, color: color, size: 20),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -420,6 +447,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
   Widget _buildCategorySelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
           'Legal Category *',
@@ -428,6 +456,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: _selectedCategory,
+          isExpanded: true,
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
@@ -440,7 +469,10 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
             ),
           ),
           items: AppConstants.legalCategories.map((category) {
-            return DropdownMenuItem(value: category, child: Text(category));
+            return DropdownMenuItem(
+              value: category,
+              child: Text(category, overflow: TextOverflow.ellipsis),
+            );
           }).toList(),
           onChanged: (value) => setState(() => _selectedCategory = value!),
           validator: (value) {
@@ -457,6 +489,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
   Widget _buildDateTimeSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
           'Schedule Date & Time *',
@@ -466,6 +499,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
         ResponsiveHelper.responsiveBuilder(
           context: context,
           mobile: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               InkWell(
                 onTap: _selectDate,
@@ -483,14 +517,19 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                         color: AppTheme.primaryColor,
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        _selectedDate != null
-                            ? DateFormat('MMM dd, yyyy').format(_selectedDate!)
-                            : 'Select Date',
-                        style: TextStyle(
-                          color: _selectedDate != null
-                              ? Colors.black87
-                              : Colors.grey,
+                      Expanded(
+                        child: Text(
+                          _selectedDate != null
+                              ? DateFormat(
+                                  'MMM dd, yyyy',
+                                ).format(_selectedDate!)
+                              : 'Select Date',
+                          style: TextStyle(
+                            color: _selectedDate != null
+                                ? Colors.black87
+                                : Colors.grey,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -514,14 +553,17 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                         color: AppTheme.primaryColor,
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        _selectedTime != null
-                            ? _selectedTime!.format(context)
-                            : 'Select Time',
-                        style: TextStyle(
-                          color: _selectedTime != null
-                              ? Colors.black87
-                              : Colors.grey,
+                      Expanded(
+                        child: Text(
+                          _selectedTime != null
+                              ? _selectedTime!.format(context)
+                              : 'Select Time',
+                          style: TextStyle(
+                            color: _selectedTime != null
+                                ? Colors.black87
+                                : Colors.grey,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -548,16 +590,19 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                           color: AppTheme.primaryColor,
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          _selectedDate != null
-                              ? DateFormat(
-                                  'MMM dd, yyyy',
-                                ).format(_selectedDate!)
-                              : 'Select Date',
-                          style: TextStyle(
-                            color: _selectedDate != null
-                                ? Colors.black87
-                                : Colors.grey,
+                        Expanded(
+                          child: Text(
+                            _selectedDate != null
+                                ? DateFormat(
+                                    'MMM dd, yyyy',
+                                  ).format(_selectedDate!)
+                                : 'Select Date',
+                            style: TextStyle(
+                              color: _selectedDate != null
+                                  ? Colors.black87
+                                  : Colors.grey,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -582,14 +627,17 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
                           color: AppTheme.primaryColor,
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          _selectedTime != null
-                              ? _selectedTime!.format(context)
-                              : 'Select Time',
-                          style: TextStyle(
-                            color: _selectedTime != null
-                                ? Colors.black87
-                                : Colors.grey,
+                        Expanded(
+                          child: Text(
+                            _selectedTime != null
+                                ? _selectedTime!.format(context)
+                                : 'Select Time',
+                            style: TextStyle(
+                              color: _selectedTime != null
+                                  ? Colors.black87
+                                  : Colors.grey,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -607,6 +655,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
   Widget _buildDescriptionField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
           'Case Description *',
@@ -616,6 +665,8 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
         TextFormField(
           controller: _descriptionController,
           maxLines: 4,
+          minLines: 3,
+          maxLength: 500,
           decoration: InputDecoration(
             hintText: 'Describe your legal issue in detail...',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -624,6 +675,7 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
               borderSide: const BorderSide(color: Color(0xFF8B4513)),
             ),
             contentPadding: const EdgeInsets.all(16),
+            counterText: '',
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -643,62 +695,68 @@ class _ConsultationBookingScreenState extends State<ConsultationBookingScreen> {
     double price =
         AppConstants.consultationPricing[_selectedConsultationType] ?? 0.0;
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Price Summary',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
+    return ResponsiveHelper.responsiveCard(
+      context: context,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Price Summary',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Consultation Fee:'),
+              Flexible(
+                child: Text(
+                  price == 0 ? 'Free' : 'PKR ${price.toStringAsFixed(0)}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
+          ),
+          if (price > 0) ...[
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Consultation Fee:'),
-                Text(
-                  price == 0 ? 'Free' : 'PKR ${price.toStringAsFixed(0)}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                const Text('Platform Fee (5%):'),
+                Flexible(
+                  child: Text(
+                    'PKR ${(price * 0.05).toStringAsFixed(0)}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    textAlign: TextAlign.end,
+                  ),
                 ),
               ],
             ),
-            if (price > 0) ...[
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Platform Fee (5%):'),
-                  Text(
-                    'PKR ${(price * 0.05).toStringAsFixed(0)}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-              const Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total Amount:',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Total Amount:',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                Flexible(
+                  child: Text(
                     'PKR ${(price * 1.05).toStringAsFixed(0)}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF8B4513),
                     ),
+                    textAlign: TextAlign.end,
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

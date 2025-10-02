@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
           title: 'ServirPak',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.lightTheme, // Using light theme for now
+          darkTheme: AppTheme.darkTheme,
           themeMode: themeService.themeMode,
           home: const SplashScreen(),
         );

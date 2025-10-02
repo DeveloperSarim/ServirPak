@@ -19,7 +19,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final AuthService _authService = AuthService();
   bool _notificationsEnabled = true;
   bool _darkModeEnabled = false;
   String _selectedLanguage = 'English';
@@ -123,8 +122,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
           _buildAppearanceSettings(),
           const SizedBox(height: 24),
-          _buildThemeSettings(),
-          const SizedBox(height: 24),
           _buildLanguageSettings(),
           const SizedBox(height: 24),
           _buildLocationSettings(),
@@ -149,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundColor: Colors.deepPurple.withOpacity(0.1),
+              backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
               backgroundImage: widget.user?.profileImage != null
                   ? NetworkImage(widget.user!.profileImage!)
                   : null,
@@ -161,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ? Icons.gavel
                           : Icons.person,
                       size: 30,
-                      color: Colors.deepPurple,
+                      color: const Color(0xFF8B4513),
                     )
                   : null,
             ),
@@ -270,23 +267,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _buildSection(
       title: 'Appearance',
       children: [
-        SwitchListTile(
-          title: const Text('Dark Mode'),
-          subtitle: const Text('Switch between light and dark themes'),
-          value: _darkModeEnabled,
-          onChanged: (value) {
-            setState(() {
-              _darkModeEnabled = value;
-            });
-          },
-          secondary: const Icon(Icons.dark_mode),
-        ),
-        _buildListTile(
-          icon: Icons.palette,
-          title: 'Theme Colors',
-          subtitle: 'Customize app colors',
-          onTap: () {
-            _showThemeColorsDialog();
+        Consumer<ThemeService>(
+          builder: (context, themeService, child) {
+            return SwitchListTile(
+              title: const Text('Dark Mode'),
+              subtitle: const Text('Switch between light and dark themes'),
+              value: themeService.isDarkMode,
+              onChanged: (value) {
+                themeService.toggleTheme();
+              },
+              secondary: const Icon(Icons.dark_mode),
+            );
           },
         ),
       ],
@@ -463,7 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.deepPurple,
+            color: Color(0xFF8B4513),
           ),
         ),
         const SizedBox(height: 8),
@@ -573,98 +564,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Delete'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildThemeSettings() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Theme Settings',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF8B4513),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Consumer<ThemeService>(
-              builder: (context, themeService, child) {
-                return Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(
-                        Icons.light_mode,
-                        color: Color(0xFF8B4513),
-                      ),
-                      title: const Text('Light Mode'),
-                      trailing: Radio<ThemeMode>(
-                        value: ThemeMode.light,
-                        groupValue: themeService.themeMode,
-                        onChanged: (ThemeMode? value) {
-                          if (value != null) {
-                            themeService.setThemeMode(value);
-                          }
-                        },
-                        activeColor: const Color(0xFF8B4513),
-                      ),
-                      onTap: () {
-                        themeService.setThemeMode(ThemeMode.light);
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.dark_mode,
-                        color: Color(0xFF8B4513),
-                      ),
-                      title: const Text('Dark Mode'),
-                      trailing: Radio<ThemeMode>(
-                        value: ThemeMode.dark,
-                        groupValue: themeService.themeMode,
-                        onChanged: (ThemeMode? value) {
-                          if (value != null) {
-                            themeService.setThemeMode(value);
-                          }
-                        },
-                        activeColor: const Color(0xFF8B4513),
-                      ),
-                      onTap: () {
-                        themeService.setThemeMode(ThemeMode.dark);
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.brightness_auto,
-                        color: Color(0xFF8B4513),
-                      ),
-                      title: const Text('System Default'),
-                      trailing: Radio<ThemeMode>(
-                        value: ThemeMode.system,
-                        groupValue: themeService.themeMode,
-                        onChanged: (ThemeMode? value) {
-                          if (value != null) {
-                            themeService.setThemeMode(value);
-                          }
-                        },
-                        activeColor: const Color(0xFF8B4513),
-                      ),
-                      onTap: () {
-                        themeService.setThemeMode(ThemeMode.system);
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -928,57 +827,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // Theme Colors Dialog
-  void _showThemeColorsDialog() {
-    String selectedColor = 'Brown';
-    final colors = ['Brown', 'Blue', 'Green', 'Purple', 'Red', 'Orange'];
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Theme Colors'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: colors.map((color) {
-                return RadioListTile<String>(
-                  title: Text(color),
-                  value: color,
-                  groupValue: selectedColor,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedColor = value!;
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Theme color changed to $selectedColor!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
-              child: const Text('Apply'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // Location Services Dialog
   void _showLocationServicesDialog() {
     bool locationEnabled = true;
@@ -1018,7 +866,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onChanged: locationEnabled
                       ? (value) {
                           setState(() {
-                            preciseLocation = value!;
+                            preciseLocation = value;
                           });
                         }
                       : null,
@@ -1032,7 +880,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onChanged: locationEnabled
                       ? (value) {
                           setState(() {
-                            backgroundLocation = value!;
+                            backgroundLocation = value;
                           });
                         }
                       : null,

@@ -183,7 +183,7 @@ class _LawyerAnalyticsScreenState extends State<LawyerAnalyticsScreen> {
                     'Total Cases',
                     totalConsultations.toString(),
                     Icons.folder,
-                    Colors.purple,
+                    const Color(0xFF8B4513),
                   ),
                 ),
               ],

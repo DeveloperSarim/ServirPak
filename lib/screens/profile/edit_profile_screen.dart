@@ -247,7 +247,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF8B4513),
         foregroundColor: Colors.white,
         actions: [
           TextButton(
@@ -277,7 +277,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   children: [
                     CircleAvatar(
                       radius: 60,
-                      backgroundColor: Colors.deepPurple.withOpacity(0.1),
+                      backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
                       backgroundImage: _selectedImage != null
                           ? (kIsWeb
                                 ? MemoryImage(_selectedImage as Uint8List)
@@ -294,7 +294,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   ? Icons.gavel
                                   : Icons.person,
                               size: 60,
-                              color: Colors.deepPurple,
+                              color: const Color(0xFF8B4513),
                             )
                           : null,
                     ),
@@ -303,7 +303,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       right: 0,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.deepPurple,
+                          color: const Color(0xFF8B4513),
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
@@ -386,9 +386,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.1),
+                  color: const Color(0xFF8B4513).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.deepPurple.withOpacity(0.3)),
+                  border: Border.all(
+                    color: const Color(0xFF8B4513).withOpacity(0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,7 +412,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               : widget.user.role == AppConstants.lawyerRole
                               ? Icons.gavel
                               : Icons.person,
-                          color: Colors.deepPurple,
+                          color: const Color(0xFF8B4513),
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -419,7 +421,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
+                            color: const Color(0xFF8B4513),
                           ),
                         ),
                       ],
@@ -436,7 +438,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: const Color(0xFF8B4513),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),

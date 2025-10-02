@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../services/consultation_service.dart';
+import '../../services/demo_data_service.dart';
 // import '../../services/chat_service.dart';
 import '../../constants/app_constants.dart';
 import '../../models/consultation_model.dart';
@@ -553,7 +554,7 @@ class _UserDashboardState extends State<UserDashboard> {
                   {
                     'name': 'Family Law',
                     'icon': Icons.family_restroom,
-                    'color': Colors.purple,
+                    'color': const Color(0xFF8B4513),
                   },
                   {
                     'name': 'Property Law',
@@ -1227,19 +1228,29 @@ class _UserDashboardState extends State<UserDashboard> {
           List<ConsultationModel> consultations = snapshot.data ?? [];
 
           if (consultations.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.folder_open, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
+                  const Icon(Icons.folder_open, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
                     'No consultations yet',
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
-                  Text(
+                  const Text(
                     'Book your first consultation!',
                     style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => _addDemoConsultations(),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Demo Consultations'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B4513),
+                      foregroundColor: Colors.white,
+                    ),
                   ),
                 ],
               ),
@@ -1261,15 +1272,59 @@ class _UserDashboardState extends State<UserDashboard> {
 
   Future<List<ConsultationModel>> _getUserConsultations() async {
     try {
+      print('🔍 Getting user consultations...');
       var session = await AuthService.getSavedUserSession();
+      print('🔍 Session data: $session');
+
+      if (session == null || session.isEmpty) {
+        print('❌ No session found');
+        return [];
+      }
+
       String userId = session['userId'] ?? '';
+      print('🔍 User ID: $userId');
 
-      if (userId.isEmpty) return [];
+      if (userId.isEmpty) {
+        print('❌ User ID is empty');
+        return [];
+      }
 
-      return await ConsultationService.getConsultationsByUserId(userId);
+      List<ConsultationModel> consultations =
+          await ConsultationService.getConsultationsByUserId(userId);
+      print('✅ Found ${consultations.length} consultations');
+
+      return consultations;
     } catch (e) {
-      print('Error getting user consultations: $e');
+      print('❌ Error getting user consultations: $e');
       return [];
+    }
+  }
+
+  Future<void> _addDemoConsultations() async {
+    try {
+      var session = await AuthService.getSavedUserSession();
+      if (session != null && session.isNotEmpty) {
+        String userId = session['userId'] ?? '';
+        if (userId.isNotEmpty) {
+          await DemoDataService.addDemoConsultationsForUser(userId);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Demo consultations added successfully!'),
+              backgroundColor: Color(0xFF8B4513),
+            ),
+          );
+          // Refresh the consultations list
+          setState(() {});
+        }
+      }
+    } catch (e) {
+      print('❌ Error adding demo consultations: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error adding demo consultations: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -1765,7 +1820,7 @@ class _UserDashboardState extends State<UserDashboard> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Showing featured lawyers'),
-        backgroundColor: Colors.purple,
+        backgroundColor: const Color(0xFF8B4513),
       ),
     );
   }

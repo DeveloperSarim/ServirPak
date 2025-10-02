@@ -92,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF8B4513),
         foregroundColor: Colors.white,
         actions: [
           IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
@@ -115,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   gradient: const LinearGradient(
-                    colors: [Colors.deepPurple, Colors.purple],
+                    colors: [const Color(0xFF8B4513), const Color(0xFFA0522D)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -224,14 +224,18 @@ class _HomeScreenState extends State<HomeScreen> {
           'icon': Icons.message,
           'color': Colors.orange,
         },
-        {'title': 'Profile', 'icon': Icons.person, 'color': Colors.purple},
+        {
+          'title': 'Profile',
+          'icon': Icons.person,
+          'color': const Color(0xFF8B4513),
+        },
       ];
     } else {
       actions = [
         {'title': 'Find Lawyers', 'icon': Icons.search, 'color': Colors.blue},
         {'title': 'My Cases', 'icon': Icons.folder, 'color': Colors.green},
         {'title': 'Messages', 'icon': Icons.message, 'color': Colors.orange},
-        {'title': 'Help', 'icon': Icons.help, 'color': Colors.purple},
+        {'title': 'Help', 'icon': Icons.help, 'color': const Color(0xFF8B4513)},
       ];
     }
 
@@ -273,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Lawyers'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF8B4513),
         foregroundColor: Colors.white,
       ),
       body: const Center(
@@ -289,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF8B4513),
         foregroundColor: Colors.white,
       ),
       body: const Center(

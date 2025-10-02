@@ -181,16 +181,18 @@ class ResponsiveHelper {
     EdgeInsets? padding,
     BoxDecoration? decoration,
   }) {
-    double width = getResponsiveWidth(context);
-    if (maxWidth != null && width > maxWidth) {
-      width = maxWidth;
-    }
-
-    return Container(
-      width: width,
-      padding: padding ?? getResponsiveEdgeInsets(context),
-      decoration: decoration,
-      child: child,
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: maxWidth ?? getResponsiveWidth(context),
+        ),
+        child: Container(
+          width: double.infinity,
+          padding: padding ?? getResponsiveEdgeInsets(context),
+          decoration: decoration,
+          child: child,
+        ),
+      ),
     );
   }
 
