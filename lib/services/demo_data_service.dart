@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_constants.dart';
+import 'chat_service.dart';
 
 class DemoDataService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -340,6 +341,10 @@ class DemoDataService {
       await addDemoConsultations(lawyerId);
       await addDemoDocuments(lawyerId);
       await addDemoMessages(lawyerId);
+
+      // Add demo chat messages for each user
+      await addDemoChatMessages(lawyerId);
+
       print('🎉 All demo data added successfully for lawyer: $lawyerId');
     } catch (e) {
       print('❌ Error adding demo data: $e');
@@ -382,6 +387,62 @@ class DemoDataService {
       print('🗑️ Demo data cleared successfully');
     } catch (e) {
       print('❌ Error clearing demo data: $e');
+    }
+  }
+
+  // Add real demo chat messages
+  static Future<void> addDemoChatMessages(String userId) async {
+    try {
+      // Sample consultations to get lawyer-user pairs
+      QuerySnapshot consultationsSnapshot = await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .where('userId', isEqualTo: userId)
+          .limit(3)
+          .get();
+
+      if (consultationsSnapshot.docs.isEmpty) return;
+
+      List<String> chatMessages = [
+        'Assalam-o-Alaikum! Mere paas legal problem hai.',
+        'Hello! Mei aapki madad kar sakta hun. Batayein kya problem hai?',
+        'Mere property dispute ka matter hai.',
+        'Acha, property dispute hain. Details bhejein.',
+        'Documents bhi hain jo show kar sakta hun.',
+      ];
+
+      ChatService chatService = ChatService();
+
+      for (var consultationDoc in consultationsSnapshot.docs) {
+        String lawyerId = consultationDoc['lawyerId'] as String;
+
+        // Add some chat messages
+        for (int i = 0; i < chatMessages.length; i++) {
+          bool isUserMessage = i % 2 == 0;
+
+          try {
+            // Use new real-time chat service
+            await _firestore.collection('chat_messages').add({
+              'chatId': '${userId}_$lawyerId',
+              'senderId': isUserMessage ? userId : lawyerId,
+              'senderName': isUserMessage ? 'Demo User' : 'Demo Lawyer',
+              'senderRole': isUserMessage ? 'user' : 'lawyer',
+              'message': chatMessages[i],
+              'messageType': 'text',
+              'sentAt': DateTime.now(),
+              'isRead': false,
+            });
+          } catch (e) {
+            print('Error sending demo message: $e');
+          }
+
+          // Add small delay between messages
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+      }
+
+      print('✅ Demo chat messages added successfully');
+    } catch (e) {
+      print('❌ Error adding demo chat messages: $e');
     }
   }
 }

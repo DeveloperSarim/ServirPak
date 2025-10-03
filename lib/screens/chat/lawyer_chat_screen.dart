@@ -2,25 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../services/chat_service.dart';
-import '../../constants/app_constants.dart';
 
-class ChatScreen extends StatefulWidget {
-  final String lawyerId;
-  final String lawyerName;
+class LawyerChatScreen extends StatefulWidget {
+  final String userId;
+  final String userName;
   final String conversationId;
 
-  const ChatScreen({
+  const LawyerChatScreen({
     super.key,
-    required this.lawyerId,
-    required this.lawyerName,
+    required this.userId,
+    required this.userName,
     required this.conversationId,
   });
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<LawyerChatScreen> createState() => _LawyerChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _LawyerChatScreenState extends State<LawyerChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ChatService _chatService = ChatService();
   final ScrollController _scrollController = ScrollController();
@@ -62,9 +61,9 @@ class _ChatScreenState extends State<ChatScreen> {
               radius: 18,
               backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
               child: Text(
-                widget.lawyerName.isNotEmpty
-                    ? widget.lawyerName[0].toUpperCase()
-                    : 'L',
+                widget.userName.isNotEmpty
+                    ? widget.userName[0].toUpperCase()
+                    : 'U',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -78,7 +77,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.lawyerName,
+                    widget.userName,
                     style: const TextStyle(
                       color: Color(0xFF8B4513),
                       fontSize: 16,
@@ -86,8 +85,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                   Text(
-                    'Online',
-                    style: TextStyle(color: Colors.green[600], fontSize: 12),
+                    'Client',
+                    style: TextStyle(color: Colors.blue[600], fontSize: 12),
                   ),
                 ],
               ),
@@ -162,7 +161,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
-            'Start your conversation',
+            'Conversation start karo',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -171,7 +170,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Send a message to ${widget.lawyerName}',
+            '${widget.userName} ko message bhejein',
             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
@@ -196,9 +195,9 @@ class _ChatScreenState extends State<ChatScreen> {
               radius: 16,
               backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
               child: Text(
-                widget.lawyerName.isNotEmpty
-                    ? widget.lawyerName[0].toUpperCase()
-                    : 'L',
+                widget.userName.isNotEmpty
+                    ? widget.userName[0].toUpperCase()
+                    : 'U',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -257,7 +256,7 @@ class _ChatScreenState extends State<ChatScreen> {
               radius: 16,
               backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
               child: const Icon(
-                Icons.person,
+                Icons.gavel,
                 size: 16,
                 color: Color(0xFF8B4513),
               ),
@@ -292,7 +291,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child: TextField(
                 controller: _messageController,
                 decoration: const InputDecoration(
-                  hintText: 'Type a message...',
+                  hintText: 'Apna message likhein...',
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 20,
@@ -328,7 +327,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (AuthService.currentUser?.uid == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please login to send messages'),
+          content: Text('Login nahi hai'),
           backgroundColor: Colors.red,
         ),
       );
@@ -387,7 +386,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.block, color: Colors.red),
-              title: const Text('Block User'),
+              title: const Text('Client ko Block karo'),
               onTap: () {
                 Navigator.pop(context);
                 // TODO: Block user functionality

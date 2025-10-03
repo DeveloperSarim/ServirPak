@@ -10,7 +10,7 @@ import '../../models/lawyer_model.dart';
 import '../../models/user_model.dart';
 import '../auth/login_screen.dart';
 // import '../consultation/consultation_booking_screen.dart';
-import '../chat/chat_list_screen.dart';
+import 'user_chat_list_screen.dart';
 import '../profile/user_profile_screen.dart';
 import '../settings/settings_screen.dart';
 import '../consultation/consultation_booking_screen.dart';
@@ -248,7 +248,7 @@ class _UserDashboardState extends State<UserDashboard> {
       case 2:
         return _buildMyCases();
       case 3:
-        return const ChatListScreen();
+        return const UserChatListScreen();
       case 4:
         return const UserProfileScreen();
       default:

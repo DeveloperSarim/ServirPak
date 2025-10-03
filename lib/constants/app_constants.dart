@@ -25,8 +25,9 @@ class AppConstants {
   static const String notificationsCollection = 'notifications';
   static const String citiesCollection = 'cities';
   static const String consultationsCollection = 'consultations';
-  static const String chatCollection = 'chat_messages';
+  static const String chatsCollection = 'chats';
   static const String chatMessagesCollection = 'chat_messages';
+  static const String chatCollection = 'chats';
   static const String paymentsCollection = 'payments';
 
   // Shared Preferences Keys

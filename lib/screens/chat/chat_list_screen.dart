@@ -3,8 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../services/chat_service.dart';
 import '../../constants/app_constants.dart';
-import '../../models/chat_model.dart';
-import '../../models/lawyer_model.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -45,12 +43,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
-            .collection(AppConstants.chatMessagesCollection)
-            .where(
-              'participants',
-              arrayContains: AuthService.currentUser?.uid ?? '',
-            )
-            .orderBy('lastMessageTime', descending: true)
+            .collection('chats')
+            .where('userId', isEqualTo: AuthService.currentUser?.uid ?? '')
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -65,27 +59,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
             return _buildEmptyState();
           }
 
-          // Group chats by conversation
-          Map<String, List<QueryDocumentSnapshot>> conversations = {};
-          for (var doc in snapshot.data!.docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            final participants = List<String>.from(data['participants'] ?? []);
-            final conversationId = _getConversationId(participants);
-
-            if (!conversations.containsKey(conversationId)) {
-              conversations[conversationId] = [];
-            }
-            conversations[conversationId]!.add(doc);
-          }
-
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: conversations.length,
+            itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
-              final conversationId = conversations.keys.elementAt(index);
-              final messages = conversations[conversationId]!;
-              final lastMessage = messages.first;
-              final data = lastMessage.data() as Map<String, dynamic>;
+              final doc = snapshot.data!.docs[index];
+              final data = doc.data() as Map<String, dynamic>;
+              final conversationId = data['conversationId'] ?? doc.id;
 
               return _buildChatItem(data, conversationId);
             },
@@ -144,25 +124,29 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   Widget _buildChatItem(Map<String, dynamic> data, String conversationId) {
     final participants = List<String>.from(data['participants'] ?? []);
+    final currentUserId = AuthService.currentUser?.uid ?? '';
     final otherParticipantId = participants.firstWhere(
-      (id) => id != AuthService.currentUser?.uid,
+      (id) => id != currentUserId,
       orElse: () => '',
     );
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: _firestore
+    return FutureBuilder<DocumentSnapshot>(
+      future: _firestore
           .collection(AppConstants.lawyersCollection)
           .doc(otherParticipantId)
-          .snapshots(),
+          .get(),
       builder: (context, lawyerSnapshot) {
         if (!lawyerSnapshot.hasData) {
           return const SizedBox.shrink();
         }
 
         final lawyerData = lawyerSnapshot.data!.data() as Map<String, dynamic>?;
-        final lawyerName = lawyerData?['name'] ?? 'Unknown Lawyer';
+        final lawyerName =
+            lawyerData?['name'] ?? data['lastSenderName'] ?? 'Unknown Lawyer';
         final lawyerSpecialization =
             lawyerData?['specialization'] ?? 'General Practice';
+        final lastMessage = data['lastMessage'] ?? 'No messages yet';
+        final lastMessageTime = data['lastMessageTime'] as Timestamp?;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -209,7 +193,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  data['message'] ?? 'No messages yet',
+                  lastMessage,
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -221,26 +205,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  _formatTime(data['timestamp']),
+                  _formatTime(lastMessageTime),
                   style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
                 const SizedBox(height: 4),
-                if (data['unreadCount'] != null && data['unreadCount'] > 0)
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF8B4513),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '${data['unreadCount']}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                // Unread badge can be added here if needed
               ],
             ),
             onTap: () {
@@ -259,11 +228,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
         );
       },
     );
-  }
-
-  String _getConversationId(List<String> participants) {
-    participants.sort();
-    return participants.join('_');
   }
 
   String _formatTime(dynamic timestamp) {
@@ -294,8 +258,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Start New Chat'),
-        content: const Text('Select a lawyer to start a conversation'),
+        title: const Text('Naya Chat Shuru Karo'),
+        content: const Text('Demo lawyer se chat start karo'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -304,15 +268,38 @@ class _ChatListScreenState extends State<ChatListScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Navigate to lawyer selection
+              _startDemoChat();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF8B4513),
               foregroundColor: Colors.white,
             ),
-            child: const Text('Select Lawyer'),
+            child: const Text('Demo Chat'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _startDemoChat() {
+    // Demo lawyer ke liye chat start karo
+    final demoLawyerId = 'demo_lawyer_123';
+    final demoLawyername = 'Demo Lawyer';
+    final demoUserId = AuthService.currentUser?.uid ?? '';
+
+    final conversationId = ChatService.generateConversationId(
+      demoUserId,
+      demoLawyerId,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          lawyerId: demoLawyerId,
+          lawyerName: demoLawyername,
+          conversationId: conversationId,
+        ),
       ),
     );
   }

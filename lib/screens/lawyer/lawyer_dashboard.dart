@@ -13,6 +13,8 @@ import 'lawyer_messages_screen.dart';
 import 'lawyer_documents_screen.dart';
 import 'lawyer_schedule_screen.dart';
 import 'lawyer_client_search_screen.dart';
+import 'lawyer_chat_list_screen.dart';
+import '../../utils/firebase_setup_helper.dart';
 import '../../utils/responsive_helper.dart';
 import '../../services/demo_data_service.dart';
 
@@ -121,7 +123,7 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.folder), label: 'My Cases'),
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Messages'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
           BottomNavigationBarItem(icon: Icon(Icons.upload), label: 'Documents'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
@@ -136,7 +138,19 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
       case 1:
         return _buildMyCases();
       case 2:
-        return const LawyerMessagesScreen();
+        return Scaffold(
+          body: const LawyerChatListScreen(),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () async {
+              await FirebaseSetupHelper.setupDemoChatData();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Demo chat created!')),
+              );
+            },
+            backgroundColor: const Color(0xFF8B4513),
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        );
       case 3:
         return const LawyerDocumentsScreen();
       case 4:
@@ -488,6 +502,11 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
               Icons.folder,
               const Color(0xFFA0522D),
             ),
+            _buildActionCard(
+              'Messages',
+              Icons.message,
+              const Color(0xFF1E88E5),
+            ),
           ],
         ),
       ],
@@ -504,6 +523,8 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             _navigateToAnalytics();
           } else if (title == 'Documents') {
             setState(() => _selectedIndex = 3);
+          } else if (title == 'Messages') {
+            setState(() => _selectedIndex = 2);
           } else if (title == 'Schedule Meeting') {
             Navigator.push(
               context,
