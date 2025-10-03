@@ -27,6 +27,30 @@ class _UserDashboardState extends State<UserDashboard> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  String? _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId();
+  }
+
+  Future<void> _loadUserId() async {
+    try {
+      final session = await AuthService.getSavedUserSession();
+      final userId = session?['userId'] as String?;
+
+      if (mounted) {
+        setState(() {
+          _currentUserId = userId;
+        });
+      }
+
+      print('🔍 UserDashboard: Loaded User ID from session: $_currentUserId');
+    } catch (e) {
+      print('❌ UserDashboard: Error loading user ID: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,41 +84,134 @@ class _UserDashboardState extends State<UserDashboard> {
       ),
       centerTitle: true,
       actions: [
-        StreamBuilder<DocumentSnapshot>(
-          stream: _firestore
-              .collection(AppConstants.usersCollection)
-              .doc(AuthService.currentUser?.uid ?? '')
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData && snapshot.data!.exists) {
-              final userData = snapshot.data!.data() as Map<String, dynamic>?;
-              final profileImageUrl = userData?['profileImage'] as String?;
+        _currentUserId != null
+            ? StreamBuilder<DocumentSnapshot>(
+                stream: _firestore
+                    .collection(AppConstants.usersCollection)
+                    .doc(_currentUserId!)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  print(
+                    '🔍 UserDashboard: StreamBuilder running for user: $_currentUserId',
+                  );
 
-              return Container(
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    final userData =
+                        snapshot.data!.data() as Map<String, dynamic>?;
+                    final profileImageUrl =
+                        userData?['profileImage'] as String?;
+                    print(
+                      '🔍 UserDashboard: Profile Image URL: $profileImageUrl',
+                    );
+                    print(
+                      '🔍 UserDashboard: Profile Image exists: ${profileImageUrl?.isNotEmpty == true}',
+                    );
+
+                    print(
+                      '🔍 UserDashboard: Using real profile image: $profileImageUrl',
+                    );
+
+                    return GestureDetector(
+                      onTap: () {
+                        // Navigate to profile when profile image is tapped
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const UserProfileScreen(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(
+                          right: 16,
+                          top: 8,
+                          bottom: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 3,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 22, // Slightly larger for better visibility
+                          backgroundColor: const Color(0xFF8B4513),
+                          backgroundImage:
+                              profileImageUrl != null &&
+                                  profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl)
+                              : null, // No image if no profile image
+                          onBackgroundImageError: (exception, stackTrace) {
+                            print('❌ Error loading profile image: $exception');
+                          },
+                          child:
+                              profileImageUrl == null || profileImageUrl.isEmpty
+                              ? const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 24,
+                                )
+                              : null,
+                        ),
+                      ),
+                    );
+                  }
+                  return GestureDetector(
+                    onTap: () {
+                      // Navigate to profile when profile image is tapped
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const UserProfileScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(
+                        right: 16,
+                        top: 8,
+                        bottom: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: const CircleAvatar(
+                        radius: 22,
+                        backgroundColor: Color(0xFF8B4513),
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              )
+            : // Fallback when userId is not loaded yet
+              Container(
                 margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundColor: const Color(0xFF8B4513),
-                  backgroundImage:
-                      profileImageUrl != null && profileImageUrl.isNotEmpty
-                      ? NetworkImage(profileImageUrl)
-                      : null,
-                  child: profileImageUrl == null || profileImageUrl.isEmpty
-                      ? const Icon(Icons.person, color: Colors.white, size: 24)
-                      : null,
+                child: const CircleAvatar(
+                  radius: 22,
+                  backgroundColor: Color(0xFF8B4513),
+                  child: Icon(Icons.person, color: Colors.white, size: 24),
                 ),
-              );
-            }
-            return Container(
-              margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-              child: const CircleAvatar(
-                radius: 20,
-                backgroundColor: Color(0xFF8B4513),
-                child: Icon(Icons.person, color: Colors.white, size: 24),
               ),
-            );
-          },
-        ),
       ],
     );
   }
@@ -332,6 +449,87 @@ class _UserDashboardState extends State<UserDashboard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Dynamic profile greeting with real user data
+                      Row(
+                        children: [
+                          // Real user profile image from Cloudinary
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: _firestore
+                                .collection(AppConstants.usersCollection)
+                                .doc(_currentUserId ?? '')
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData && snapshot.data!.exists) {
+                                final userData =
+                                    snapshot.data!.data()
+                                        as Map<String, dynamic>?;
+                                final profileImageUrl =
+                                    userData?['profileImage'] as String?;
+
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 15,
+                                    backgroundColor: Colors.white.withOpacity(
+                                      0.2,
+                                    ),
+                                    backgroundImage:
+                                        profileImageUrl != null &&
+                                            profileImageUrl.isNotEmpty
+                                        ? NetworkImage(profileImageUrl)
+                                        : null,
+                                    child:
+                                        profileImageUrl == null ||
+                                            profileImageUrl.isEmpty
+                                        ? Icon(
+                                            Icons.person,
+                                            color: Colors.white,
+                                            size: 16,
+                                          )
+                                        : null,
+                                  ),
+                                );
+                              }
+                              return Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 15,
+                                  backgroundColor: Colors.white.withOpacity(
+                                    0.2,
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Welcome Back!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                       const Text(
                         'Need Consultation Now?',
                         style: TextStyle(
@@ -389,40 +587,54 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget _buildGreetingSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: StreamBuilder<DocumentSnapshot>(
-        stream: _firestore
-            .collection(AppConstants.usersCollection)
-            .doc(AuthService.currentUser?.uid ?? '')
-            .snapshots(),
-        builder: (context, snapshot) {
-          String userName = 'User';
-          if (snapshot.hasData && snapshot.data!.exists) {
-            final userData = snapshot.data!.data() as Map<String, dynamic>?;
-            userName = userData?['name'] as String? ?? 'User';
-          }
+      child: _currentUserId != null
+          ? StreamBuilder<DocumentSnapshot>(
+              stream: _firestore
+                  .collection(AppConstants.usersCollection)
+                  .doc(_currentUserId!)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                String userName = 'User';
+                if (snapshot.hasData && snapshot.data!.exists) {
+                  final userData =
+                      snapshot.data!.data() as Map<String, dynamic>?;
+                  userName = userData?['name'] as String? ?? 'User';
+                }
 
-          return Row(
-            children: [
-              Text(
-                'Hello $userName | ',
-                style: const TextStyle(
-                  color: Color(0xFF8B4513),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                return Row(
+                  children: [
+                    Text(
+                      'Hello $userName | ',
+                      style: const TextStyle(
+                        color: Color(0xFF8B4513),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Text(
+                      'Find your Consultant',
+                      style: TextStyle(
+                        color: Color(0xFF8B4513),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            )
+          : Row(
+              children: [
+                Text(
+                  'Hello User | ',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              const Text(
-                'Find your Consultant',
-                style: TextStyle(
-                  color: Color(0xFF8B4513),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+              ],
+            ),
     );
   }
 

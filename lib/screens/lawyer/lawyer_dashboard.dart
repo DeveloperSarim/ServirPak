@@ -176,6 +176,56 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
         ),
         centerTitle: true,
         actions: [
+          // Profile Image
+          StreamBuilder<DocumentSnapshot>(
+            stream: _firestore
+                .collection(AppConstants.usersCollection)
+                .doc(AuthService.currentUser?.uid ?? '')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data!.exists) {
+                final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                final profileImageUrl = userData?['profileImage'] as String?;
+
+                return Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF8B4513),
+                      width: 2,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: const Color(0xFF8B4513),
+                    backgroundImage:
+                        profileImageUrl != null && profileImageUrl.isNotEmpty
+                        ? NetworkImage(profileImageUrl)
+                        : null,
+                    onBackgroundImageError: (exception, stackTrace) {
+                      print('❌ Error loading lawyer profile image: $exception');
+                    },
+                    child: profileImageUrl == null || profileImageUrl.isEmpty
+                        ? const Icon(Icons.gavel, color: Colors.white, size: 18)
+                        : null,
+                  ),
+                );
+              }
+              return Container(
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF8B4513), width: 2),
+                ),
+                child: const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Color(0xFF8B4513),
+                  child: Icon(Icons.gavel, color: Colors.white, size: 18),
+                ),
+              );
+            },
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Color(0xFF8B4513)),
             onSelected: (value) {

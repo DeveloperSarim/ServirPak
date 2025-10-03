@@ -133,6 +133,71 @@ class _AdminDashboardState extends State<AdminDashboard> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          StreamBuilder<DocumentSnapshot>(
+            stream: _firestore
+                .collection(AppConstants.usersCollection)
+                .doc(AuthService.currentUser?.uid ?? '')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data!.exists) {
+                final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                final profileImageUrl = userData?['profileImage'] as String?;
+
+                return GestureDetector(
+                  onTap: () {
+                    // Show admin profile info
+                    _showAdminProfileDialog(userData);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF8B4513),
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFF8B4513),
+                      backgroundImage:
+                          profileImageUrl != null && profileImageUrl.isNotEmpty
+                          ? NetworkImage(profileImageUrl)
+                          : null,
+                      onBackgroundImageError: (exception, stackTrace) {
+                        print(
+                          '❌ Error loading admin profile image: $exception',
+                        );
+                      },
+                      child: profileImageUrl == null || profileImageUrl.isEmpty
+                          ? const Icon(
+                              Icons.admin_panel_settings,
+                              color: Colors.white,
+                              size: 20,
+                            )
+                          : null,
+                    ),
+                  ),
+                );
+              }
+              return Container(
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF8B4513), width: 2),
+                ),
+                child: const CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Color(0xFF8B4513),
+                  child: Icon(
+                    Icons.admin_panel_settings,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Color(0xFF8B4513)),
             onPressed: _logout,
@@ -3025,6 +3090,72 @@ class _AdminDashboardState extends State<AdminDashboard> {
             },
             style: TextButton.styleFrom(foregroundColor: Colors.orange),
             child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAdminProfileDialog(Map<String, dynamic>? userData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Admin Profile',
+          style: TextStyle(color: Color(0xFF8B4513)),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: const Color(0xFF8B4513),
+              backgroundImage: userData?['profileImage'] != null
+                  ? NetworkImage(userData!['profileImage'])
+                  : null,
+              child: userData?['profileImage'] == null
+                  ? const Icon(
+                      Icons.admin_panel_settings,
+                      size: 50,
+                      color: Colors.white,
+                    )
+                  : null,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              userData?['name'] ?? 'Admin',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              userData?['email'] ?? '',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.vpn_key, color: Colors.green[700], size: 20),
+                const SizedBox(width: 4),
+                Text(
+                  'Admin Access',
+                  style: TextStyle(
+                    color: Colors.green[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Close',
+              style: TextStyle(color: Color(0xFF8B4513)),
+            ),
           ),
         ],
       ),
