@@ -84,6 +84,11 @@ class ImageService {
     String userId,
   ) async {
     try {
+      print('🔍 ImageService: Upload profile image started');
+      print('🔍 ImageService: Image type: ${imageFile.runtimeType}');
+      print('🔍 ImageService: User ID: $userId');
+      print('🔍 ImageService: Upload URL: $_uploadUrl');
+
       // Create multipart request
       var request = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
 

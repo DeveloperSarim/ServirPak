@@ -110,6 +110,59 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  Widget _buildImagePreview() {
+    // Show selected image first, then current image, then default icon
+    if (_selectedImage != null) {
+      if (kIsWeb) {
+        return Image.memory(
+          _selectedImage as Uint8List,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildDefaultIcon();
+          },
+        );
+      } else {
+        return Image.file(
+          _selectedImage as File,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildDefaultIcon();
+          },
+        );
+      }
+    } else if (_currentImageUrl != null) {
+      return Image.network(
+        _currentImageUrl!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildDefaultIcon();
+        },
+      );
+    } else {
+      return _buildDefaultIcon();
+    }
+  }
+
+  Widget _buildDefaultIcon() {
+    IconData iconData;
+    double iconSize = MediaQuery.of(context).size.width > 600 ? 70 : 60;
+
+    if (widget.user.role == AppConstants.adminRole) {
+      iconData = Icons.admin_panel_settings;
+    } else if (widget.user.role == AppConstants.lawyerRole) {
+      iconData = Icons.gavel;
+    } else {
+      iconData = Icons.person;
+    }
+
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: const Color(0xFF8B4513).withOpacity(0.1),
+      child: Icon(iconData, size: iconSize, color: const Color(0xFF8B4513)),
+    );
+  }
+
   Future<void> _uploadImage() async {
     if (_selectedImage == null) return;
 
@@ -129,18 +182,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _selectedImage = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile image updated successfully')),
+          const SnackBar(
+            content: Text('✅ Profile image successful upload!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
         );
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to upload image')));
+        print('❌ Image upload failed - using mock URL for testing');
+        // For testing, use a mock URL temporarily
+        setState(() {
+          _currentImageUrl =
+              'https://via.placeholder.com/300x300/8B4513/FFFFFF?text=Profile+${widget.user.id.substring(0, 4)}';
+          _selectedImage = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Image upload fail! Demo URL use kar rahe hain.\n'
+              'Web: ${kIsWeb}\n'
+              'User: ${widget.user.name}',
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 5),
+          ),
+        );
       }
     } catch (e) {
       print('❌ Error uploading image: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error uploading image: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 5),
+        ),
+      );
     } finally {
       setState(() {
         _isUploadingImage = false;
@@ -178,7 +254,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
+          const SnackBar(
+            content: Text('✅ Profile successfully updated!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
         );
         Navigator.pop(context, updatedUser);
       }
@@ -275,28 +355,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Center(
                 child: Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
-                      backgroundImage: _selectedImage != null
-                          ? (kIsWeb
-                                ? MemoryImage(_selectedImage as Uint8List)
-                                : FileImage(_selectedImage as File))
-                          : (_currentImageUrl != null
-                                    ? NetworkImage(_currentImageUrl!)
-                                    : null)
-                                as ImageProvider?,
-                      child: _selectedImage == null && _currentImageUrl == null
-                          ? Icon(
-                              widget.user.role == AppConstants.adminRole
-                                  ? Icons.admin_panel_settings
-                                  : widget.user.role == AppConstants.lawyerRole
-                                  ? Icons.gavel
-                                  : Icons.person,
-                              size: 60,
-                              color: const Color(0xFF8B4513),
-                            )
-                          : null,
+                    Container(
+                      width: MediaQuery.of(context).size.width > 600
+                          ? 140
+                          : 120,
+                      height: MediaQuery.of(context).size.width > 600
+                          ? 140
+                          : 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF8B4513),
+                          width: MediaQuery.of(context).size.width > 600
+                              ? 4
+                              : 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF8B4513).withOpacity(0.3),
+                            spreadRadius: 2,
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(child: _buildImagePreview()),
                     ),
                     Positioned(
                       bottom: 0,
