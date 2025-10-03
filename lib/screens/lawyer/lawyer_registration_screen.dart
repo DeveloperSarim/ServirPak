@@ -430,15 +430,28 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(60),
                               child: kIsWeb
-                                  ? Image.network(
-                                      _profileImage!.path,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              const Icon(
-                                                Icons.person,
-                                                size: 60,
-                                              ),
+                                  ? FutureBuilder<Uint8List>(
+                                      future: _profileImage!.readAsBytes(),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Image.memory(
+                                            snapshot.data!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    const Icon(
+                                                      Icons.person,
+                                                      size: 60,
+                                                    ),
+                                          );
+                                        } else if (snapshot.hasError) {
+                                          return const Icon(
+                                            Icons.person,
+                                            size: 60,
+                                          );
+                                        }
+                                        return const CircularProgressIndicator();
+                                      },
                                     )
                                   : Image.file(
                                       _profileImage!,

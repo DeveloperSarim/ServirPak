@@ -1,18 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import '../config/cloudinary_config.dart';
 
 class CloudinaryService {
   // Base URL for Cloudinary API
   static String get _baseUrl => CloudinaryConfig.baseUrl;
 
-  // Document upload karne ke liye
+  // Document upload karne ke liye - Web Compatible
   static Future<String?> uploadDocument({
-    required File file,
+    required dynamic file, // File for mobile, Uint8List for web
     required String folder,
     String? publicId,
+    String? originalFileName,
   }) async {
     try {
       // Generate unique public ID agar nahi diya gaya ho
@@ -25,14 +28,28 @@ class CloudinaryService {
         Uri.parse('$_baseUrl/auto/upload'),
       );
 
-      // Add file to request
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'file',
-          file.path,
-          filename: file.path.split('/').last,
-        ),
-      );
+      // Add file to request - cross-platform
+      if (kIsWeb) {
+        // For web, use Uint8List
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            file as Uint8List,
+            filename:
+                originalFileName ??
+                'document_${DateTime.now().millisecondsSinceEpoch}',
+          ),
+        );
+      } else {
+        // For mobile, use File
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'file',
+            (file as File).path,
+            filename: originalFileName ?? file.path.split('/').last,
+          ),
+        );
+      }
 
       // Add parameters
       request.fields.addAll({
@@ -64,11 +81,12 @@ class CloudinaryService {
     return null;
   }
 
-  // Image upload karne ke liye
+  // Image upload karne ke liye - Web Compatible
   static Future<String?> uploadImage({
-    required File file,
+    required dynamic file, // File for mobile, Uint8List for web
     required String folder,
     String? publicId,
+    String? originalFileName,
     int? width,
     int? height,
     String? crop,
@@ -82,13 +100,28 @@ class CloudinaryService {
         Uri.parse('$_baseUrl/image/upload'),
       );
 
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'file',
-          file.path,
-          filename: file.path.split('/').last,
-        ),
-      );
+      // Add file - cross-platform
+      if (kIsWeb) {
+        // For web, use Uint8List
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            file as Uint8List,
+            filename:
+                originalFileName ??
+                'image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          ),
+        );
+      } else {
+        // For mobile, use File
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'file',
+            (file as File).path,
+            filename: originalFileName ?? file.path.split('/').last,
+          ),
+        );
+      }
 
       Map<String, String> fields = {
         'upload_preset': CloudinaryConfig.uploadPreset,
@@ -122,11 +155,13 @@ class CloudinaryService {
     return null;
   }
 
-  // Multiple files upload karne ke liye
+  // Multiple files upload karne ke liye - Web Compatible
   static Future<List<String>> uploadMultipleDocuments({
-    required List<File> files,
+    required List<dynamic>
+    files, // List<File> for mobile, List<Uint8List> for web
     required String folder,
     String? prefix,
+    List<String>? fileNames, // Optional list of original file names for web
   }) async {
     List<String> uploadedUrls = [];
 
@@ -139,6 +174,9 @@ class CloudinaryService {
         file: files[i],
         folder: folder,
         publicId: publicId,
+        originalFileName: fileNames != null && i < fileNames.length
+            ? fileNames[i]
+            : null,
       );
 
       if (url != null) {

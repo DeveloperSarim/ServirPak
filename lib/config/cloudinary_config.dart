@@ -1,17 +1,17 @@
 // Cloudinary Configuration
 // Aapko yeh values Cloudinary dashboard se milengi
 class CloudinaryConfig {
-  // Aapka Cloudinary cloud name
-  static const String cloudName = 'your_cloud_name_here';
+  // Your Cloudinary cloud name (working credentials)
+  static const String cloudName = 'dii8rpixj';
 
   // Aapka API key
-  static const String apiKey = 'your_api_key_here';
+  static const String apiKey = '294514962427167';
 
   // Aapka API secret
-  static const String apiSecret = 'your_api_secret_here';
+  static const String apiSecret = 'yH0uP4MNAUv_scZzCbn5LCt53WM';
 
-  // Aapka upload preset (unsigned uploads ke liye)
-  static const String uploadPreset = 'your_upload_preset_here';
+  // Your upload preset (working preset name)
+  static const String uploadPreset = 'servipak_preset';
 
   // Base URL for Cloudinary API
   static String get baseUrl => 'https://api.cloudinary.com/v1_1/$cloudName';
@@ -30,4 +30,3 @@ class CloudinaryConfig {
   //    - Save karein
   // 4. Yahan values update karein
 }
-
