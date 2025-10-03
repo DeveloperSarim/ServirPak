@@ -29,6 +29,7 @@ class AppConstants {
   static const String chatMessagesCollection = 'chat_messages';
   static const String chatCollection = 'chats';
   static const String paymentsCollection = 'payments';
+  static const String reviewsCollection = 'reviews';
 
   // Shared Preferences Keys
   static const String isFirstTimeKey = 'is_first_time';

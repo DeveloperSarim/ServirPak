@@ -6,6 +6,9 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
+import '../../services/lawyer_service.dart';
+import '../../services/review_service.dart';
+import '../../services/user_seed_service.dart';
 import '../../constants/app_constants.dart';
 import '../auth/login_screen.dart';
 
@@ -19,6 +22,8 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final LawyerService _lawyerService = LawyerService();
+  final ReviewService _reviewService = ReviewService();
   int _pendingLawyersCount = 0;
 
   @override
@@ -219,6 +224,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
             const SizedBox(height: 20),
 
+            // Seed Data Button
+            _buildSeedDataButton(),
+
+            const SizedBox(height: 20),
+
             // Recent Activity
             _buildRecentActivity(),
           ],
@@ -312,6 +322,52 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSeedDataButton() {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _seedAllData,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.storage),
+            label: const Text(
+              '🌱 Seed All Data (Users, Lawyers, Reviews, Consultations, Chats)',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _seedLawyerData,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: const Icon(Icons.gavel),
+            label: const Text(
+              '⚖️ Seed Only Lawyers & Reviews',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -3160,6 +3216,109 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ],
       ),
     );
+  }
+
+  // Comprehensive seed all data
+  Future<void> _seedAllData() async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Seeding all data...'),
+            ],
+          ),
+        ),
+      );
+
+      // Seed users first
+      await UserSeedService.seedUserData();
+
+      // Seed lawyer details
+      await _lawyerService.seedLawyerDetails();
+
+      // Seed reviews for each lawyer
+      final lawyers = await _lawyerService.getVerifiedLawyers();
+      for (var lawyer in lawyers) {
+        await _reviewService.seedSampleReviews(lawyer.id);
+      }
+
+      // Seed consultations
+      await UserSeedService.seedConsultationData();
+
+      // Seed chats
+      await UserSeedService.seedChatData();
+
+      Navigator.pop(context); // Close loading dialog
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '🎉 All data seeded successfully! Users, Lawyers, Reviews, Consultations & Chats',
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      Navigator.pop(context); // Close loading dialog
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error seeding all data: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _seedLawyerData() async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Seeding lawyer data...'),
+            ],
+          ),
+        ),
+      );
+
+      // Seed lawyer details
+      await _lawyerService.seedLawyerDetails();
+
+      // Seed reviews for each lawyer
+      final lawyers = await _lawyerService.getVerifiedLawyers();
+      for (var lawyer in lawyers) {
+        await _reviewService.seedSampleReviews(lawyer.id);
+      }
+
+      Navigator.pop(context); // Close loading dialog
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Lawyer data and reviews seeded successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      Navigator.pop(context); // Close loading dialog
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error seeding data: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _logout() async {

@@ -18,10 +18,16 @@ class LawyerModel {
   final String? bio;
   final double? rating;
   final int? totalCases;
-  final List<String> languages;
+  final List<String>? languages;
   final String? address;
   final String? city;
   final String? province;
+  final String? education;
+  final String? officeAddress;
+  final String? officeHours;
+  final String? consultationFee;
+  final String? certifications;
+  final String? awards;
 
   LawyerModel({
     required this.id,
@@ -41,10 +47,16 @@ class LawyerModel {
     this.bio,
     this.rating,
     this.totalCases,
-    this.languages = const [],
+    this.languages,
     this.address,
     this.city,
     this.province,
+    this.education,
+    this.officeAddress,
+    this.officeHours,
+    this.consultationFee,
+    this.certifications,
+    this.awards,
   });
 
   factory LawyerModel.fromFirestore(DocumentSnapshot doc) {
@@ -70,10 +82,18 @@ class LawyerModel {
       bio: data['bio'],
       rating: data['rating']?.toDouble(),
       totalCases: data['totalCases'],
-      languages: List<String>.from(data['languages'] ?? []),
+      languages: data['languages'] != null
+          ? List<String>.from(data['languages'])
+          : null,
       address: data['address'],
       city: data['city'],
       province: data['province'],
+      education: data['education'],
+      officeAddress: data['officeAddress'],
+      officeHours: data['officeHours'],
+      consultationFee: data['consultationFee'],
+      certifications: data['certifications'],
+      awards: data['awards'],
     );
   }
 
@@ -99,6 +119,12 @@ class LawyerModel {
       'address': address,
       'city': city,
       'province': province,
+      'education': education,
+      'officeAddress': officeAddress,
+      'officeHours': officeHours,
+      'consultationFee': consultationFee,
+      'certifications': certifications,
+      'awards': awards,
     };
   }
 
@@ -124,6 +150,12 @@ class LawyerModel {
     String? address,
     String? city,
     String? province,
+    String? education,
+    String? officeAddress,
+    String? officeHours,
+    String? consultationFee,
+    String? certifications,
+    String? awards,
   }) {
     return LawyerModel(
       id: id ?? this.id,
@@ -147,6 +179,12 @@ class LawyerModel {
       address: address ?? this.address,
       city: city ?? this.city,
       province: province ?? this.province,
+      education: education ?? this.education,
+      officeAddress: officeAddress ?? this.officeAddress,
+      officeHours: officeHours ?? this.officeHours,
+      consultationFee: consultationFee ?? this.consultationFee,
+      certifications: certifications ?? this.certifications,
+      awards: awards ?? this.awards,
     );
   }
 

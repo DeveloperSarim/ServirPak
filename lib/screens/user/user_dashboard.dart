@@ -14,6 +14,7 @@ import 'user_chat_list_screen.dart';
 import '../profile/user_profile_screen.dart';
 import '../settings/settings_screen.dart';
 import '../consultation/consultation_booking_screen.dart';
+import '../lawyer/lawyer_details_screen.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -1282,138 +1283,179 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget _buildLawyerListItem(Map<String, dynamic> data, int index) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundColor: Colors.green.withOpacity(0.1),
-                  child: Text(
-                    data['name']?.toString().substring(0, 1).toUpperCase() ??
-                        'L',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
+      child: InkWell(
+        onTap: () {
+          // Navigate to lawyer details screen
+          final lawyer = LawyerModel(
+            id: data['id'] ?? 'lawyer_$index',
+            userId: data['userId'] ?? 'lawyer_$index',
+            email: data['email'] ?? 'lawyer@servipak.com',
+            name: data['name'] ?? 'Unknown Lawyer',
+            phone: data['phone'] ?? '+92-300-0000000',
+            status: data['status'] ?? AppConstants.verifiedStatus,
+            specialization: data['specialization'] ?? 'General Practice',
+            experience: data['experience'] ?? '0 years',
+            barCouncilNumber: data['barCouncilNumber'] ?? 'BC-2023-000',
+            profileImage: data['profileImage'],
+            bio: data['bio'],
+            education: data['education'],
+            languages: data['languages'],
+            officeAddress: data['officeAddress'],
+            officeHours: data['officeHours'],
+            consultationFee: data['consultationFee'],
+            certifications: data['certifications'],
+            awards: data['awards'],
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LawyerDetailsScreen(lawyer: lawyer),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 25,
+                    backgroundColor: Colors.green.withOpacity(0.1),
+                    child: Text(
+                      data['name']?.toString().substring(0, 1).toUpperCase() ??
+                          'L',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data['name'] ?? 'Unknown',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data['name'] ?? 'Unknown',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
+                        Text(
+                          data['specialization'] ?? 'General Practice',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 16),
+                          const SizedBox(width: 4),
+                          Text('${data['rating'] ?? 0.0}'),
+                        ],
                       ),
                       Text(
-                        data['specialization'] ?? 'General Practice',
-                        style: const TextStyle(color: Colors.grey),
+                        '${data['totalCases'] ?? 0} cases',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 16),
-                        const SizedBox(width: 4),
-                        Text('${data['rating'] ?? 0.0}'),
-                      ],
-                    ),
-                    Text(
-                      '${data['totalCases'] ?? 0} cases',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.location_on, color: Colors.grey, size: 16),
-                const SizedBox(width: 4),
-                Text(data['city'] ?? 'Unknown'),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: () async {
-                    // Create lawyer model from Firestore data
-                    LawyerModel lawyerModel = LawyerModel(
-                      id: data['id'] as String? ?? 'lawyer_$index',
-                      userId: data['userId'] as String? ?? 'lawyer_$index',
-                      email: data['email'] as String? ?? 'lawyer@servipak.com',
-                      name: data['name'] as String? ?? 'Unknown Lawyer',
-                      phone: data['phone'] as String? ?? '+92-300-0000000',
-                      status:
-                          data['status'] as String? ??
-                          AppConstants.verifiedStatus,
-                      specialization:
-                          data['specialization'] as String? ??
-                          'General Practice',
-                      experience: data['experience'] as String? ?? '0 years',
-                      barCouncilNumber:
-                          data['barCouncilNumber'] as String? ?? 'BC-2023-000',
-                      bio: data['bio'] as String? ?? 'Experienced lawyer',
-                      rating: data['rating'] as double? ?? 0.0,
-                      totalCases: data['totalCases'] as int? ?? 0,
-                      languages: List<String>.from(
-                        data['languages'] as List? ?? ['Urdu', 'English'],
-                      ),
-                      address:
-                          data['address'] as String? ?? 'Address not provided',
-                      city: data['city'] as String? ?? 'Unknown',
-                      province: data['province'] as String? ?? 'Unknown',
-                      createdAt: DateTime.now(),
-                    );
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.location_on, color: Colors.grey, size: 16),
+                  const SizedBox(width: 4),
+                  Text(data['city'] ?? 'Unknown'),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: () async {
+                      // Create lawyer model from Firestore data
+                      LawyerModel lawyerModel = LawyerModel(
+                        id: data['id'] as String? ?? 'lawyer_$index',
+                        userId: data['userId'] as String? ?? 'lawyer_$index',
+                        email:
+                            data['email'] as String? ?? 'lawyer@servipak.com',
+                        name: data['name'] as String? ?? 'Unknown Lawyer',
+                        phone: data['phone'] as String? ?? '+92-300-0000000',
+                        status:
+                            data['status'] as String? ??
+                            AppConstants.verifiedStatus,
+                        specialization:
+                            data['specialization'] as String? ??
+                            'General Practice',
+                        experience: data['experience'] as String? ?? '0 years',
+                        barCouncilNumber:
+                            data['barCouncilNumber'] as String? ??
+                            'BC-2023-000',
+                        bio: data['bio'] as String? ?? 'Experienced lawyer',
+                        rating: data['rating'] as double? ?? 0.0,
+                        totalCases: data['totalCases'] as int? ?? 0,
+                        languages: List<String>.from(
+                          data['languages'] as List? ?? ['Urdu', 'English'],
+                        ),
+                        address:
+                            data['address'] as String? ??
+                            'Address not provided',
+                        city: data['city'] as String? ?? 'Unknown',
+                        province: data['province'] as String? ?? 'Unknown',
+                        createdAt: DateTime.now(),
+                      );
 
-                    // Get current user
-                    UserModel? currentUser = await _getCurrentUser();
+                      // Get current user
+                      UserModel? currentUser = await _getCurrentUser();
 
-                    if (currentUser != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ConsultationBookingScreen(
-                            lawyer: lawyerModel,
-                            user: currentUser,
+                      if (currentUser != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ConsultationBookingScreen(
+                              lawyer: lawyerModel,
+                              user: currentUser,
+                            ),
                           ),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please login to book consultation'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B4513), // Saddle Brown
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please login to book consultation'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B4513), // Saddle Brown
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    child: const Text('Book Consultation'),
                   ),
-                  child: const Text('Book Consultation'),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
