@@ -111,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ? 'Account created successfully!'
                   : _selectedRole == AppConstants.lawyerRole
                   ? 'Account created! Ab apna lawyer profile complete karein.'
-                  : 'Account created! Please wait for admin approval.',
+                  : 'Account created successfully! Ab aap login kar sakte hain.',
             ),
             backgroundColor: Colors.green,
           ),

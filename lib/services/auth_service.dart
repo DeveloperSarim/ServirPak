@@ -97,7 +97,7 @@ class AuthService {
           role: role,
           status: role == AppConstants.adminRole
               ? AppConstants.verifiedStatus
-              : AppConstants.pendingStatus,
+              : AppConstants.verifiedStatus, // Auto approve all users
           createdAt: DateTime.now(),
           additionalInfo: city != null ? {'city': city} : null,
         );
@@ -410,6 +410,145 @@ class AuthService {
       await prefs.setBool(AppConstants.isFirstTimeKey, false);
     } catch (e) {
       print('Set first time false error: $e');
+    }
+  }
+
+  // Send password reset email (for admin use and user self-service)
+  static Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      // Firebase Auth automatically handles password reset emails
+      // with proper action code URLs that are secure and temporary
+      await _auth.sendPasswordResetEmail(email: email);
+
+      print('✅ Password reset email sent successfully to: $email');
+      print('📧 Firebase Auth sent reset link with secure action code');
+    } catch (e) {
+      print('❌ Password reset email error: $e');
+
+      // Handle specific Firebase Auth errors with better messages
+      String errorMessage = 'Password reset email could not be sent.';
+
+      if (e.toString().contains('user-not-found')) {
+        errorMessage =
+            'No account found with this email address. Please check your email or contact support.';
+      } else if (e.toString().contains('invalid-email')) {
+        errorMessage =
+            'Please enter a valid email address format (example@domain.com).';
+      } else if (e.toString().contains('too-many-requests')) {
+        errorMessage =
+            'Too many password reset requests. Please wait 1 hour before trying again.';
+      } else if (e.toString().contains('firebase_auth/invalid-email')) {
+        errorMessage =
+            'Invalid email address format. Please use a valid email address.';
+      } else if (e.toString().contains('network-request-failed')) {
+        errorMessage =
+            'Network connection error. Please check your internet connection and try again.';
+      }
+
+      throw Exception(errorMessage);
+    }
+  }
+
+  // Update user email (admin function)
+  static Future<void> updateUserEmail({
+    required String userId,
+    required String oldEmail,
+    required String newEmail,
+  }) async {
+    try {
+      // Get current user
+      User? currentUser = _auth.currentUser;
+
+      if (currentUser == null) {
+        throw Exception('No authenticated user found');
+      }
+
+      // Update email in Firebase Auth
+      await currentUser.updateEmail(newEmail);
+
+      // Verify email
+      await currentUser.sendEmailVerification();
+
+      // Update email in Firestore
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .update({
+            'email': newEmail,
+            'updatedAt': Timestamp.fromDate(DateTime.now()),
+          });
+
+      print('✅ Email updated successfully to: $newEmail');
+    } catch (e) {
+      print('❌ Update email error: $e');
+      rethrow;
+    }
+  }
+
+  // Reset user password (admin function)
+  static Future<void> resetUserPassword({required String email}) async {
+    try {
+      await sendPasswordResetEmail(email);
+      print('✅ Password reset email sent to: $email');
+    } catch (e) {
+      print('❌ Password reset error: $e');
+      rethrow;
+    }
+  }
+
+  // Get all users (admin function)
+  static Future<List<UserModel>> getAllUsers() async {
+    try {
+      QuerySnapshot querySnapshot = await _firestore
+          .collection(AppConstants.usersCollection)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => UserModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      print('❌ Get all users error: $e');
+      rethrow;
+    }
+  }
+
+  // Delete user account (admin function)
+  static Future<void> deleteUserAccount({required String userId}) async {
+    try {
+      // Delete from Firestore
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .delete();
+
+      // Try to delete from Firebase Auth (requires admin SDK in production)
+      print('✅ User account deleted from Firestore: $userId');
+      print('⚠️ Note: Firebase Auth deletion requires Admin SDK');
+    } catch (e) {
+      print('❌ Delete user account error: $e');
+      rethrow;
+    }
+  }
+
+  // Update user role (admin function)
+  static Future<void> updateUserRole({
+    required String userId,
+    required String newRole,
+  }) async {
+    try {
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .update({
+            'role': newRole,
+            'updatedAt': Timestamp.fromDate(DateTime.now()),
+          });
+
+      print('✅ User role updated to: $newRole');
+    } catch (e) {
+      print('❌ Update user role error: $e');
+      rethrow;
     }
   }
 }

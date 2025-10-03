@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import '../../services/auth_service.dart';
+import '../../services/cloudinary_service.dart';
 import '../../constants/app_constants.dart';
-import '../../models/user_model.dart';
-import '../../models/lawyer_model.dart';
-import '../../models/consultation_model.dart';
 import '../auth/login_screen.dart';
-import '../settings/settings_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -184,7 +183,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Welcome, Admin!',
+            'Khush Aamdeed, Admin!',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -193,20 +192,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Manage your legal platform with ease',
+            'Apna legal platform asani se manage karein',
             style: TextStyle(fontSize: 16, color: Colors.white70),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               _buildQuickActionButton(
-                'Add User',
+                'User Add Karo',
                 Icons.person_add,
                 () => _showAddUserDialog(),
               ),
               const SizedBox(width: 12),
               _buildQuickActionButton(
-                'Verify Lawyer',
+                'Lawyer Verify Karo',
                 Icons.verified_user,
                 () => setState(() => _selectedIndex = 3),
               ),
@@ -265,18 +264,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   (doc.data() as Map)['role'] == AppConstants.adminRole,
             )
             .length;
-        int lawyerCount = snapshot.data!.docs
+        List<QueryDocumentSnapshot> usersAndLawyers = snapshot.data!.docs
+            .where((doc) => doc.data() is Map)
+            .toList();
+        int lawyerCount = usersAndLawyers
             .where(
-              (doc) =>
-                  doc.data() is Map &&
-                  (doc.data() as Map)['role'] == AppConstants.lawyerRole,
+              (doc) => (doc.data() as Map)['role'] == AppConstants.lawyerRole,
             )
             .length;
-        int userCount = snapshot.data!.docs
+        int userCount = usersAndLawyers
             .where(
-              (doc) =>
-                  doc.data() is Map &&
-                  (doc.data() as Map)['role'] == AppConstants.userRole,
+              (doc) => (doc.data() as Map)['role'] == AppConstants.userRole,
             )
             .length;
 
@@ -639,17 +637,45 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore.collection(AppConstants.usersCollection).snapshots(),
+        stream: _firestore
+            .collection(AppConstants.usersCollection)
+            .where('role', isEqualTo: AppConstants.userRole)
+            .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
+          final userDocs = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['role'] == AppConstants.userRole;
+          }).toList();
+
+          if (userDocs.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No users found',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                  Text(
+                    'Only user accounts are shown here',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: snapshot.data!.docs.length,
+            itemCount: userDocs.length,
             itemBuilder: (context, index) {
-              final doc = snapshot.data!.docs[index];
+              final doc = userDocs[index];
               final data = doc.data() as Map<String, dynamic>;
 
               return _buildUserCard(doc.id, data);
@@ -667,19 +693,27 @@ class _AdminDashboardState extends State<AdminDashboard> {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
+          radius: 30,
           backgroundColor: _getRoleColor(data['role']),
-          child: Text(
-            data['name']?.toString().substring(0, 1).toUpperCase() ?? 'U',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          backgroundImage:
+              data['profileImage'] != null && data['profileImage'].isNotEmpty
+              ? NetworkImage(data['profileImage'])
+              : null,
+          child: data['profileImage'] == null || data['profileImage'].isEmpty
+              ? Text(
+                  data['name']?.toString().substring(0, 1).toUpperCase() ?? 'U',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : null,
         ),
         title: Text(
           data['name'] ?? 'Unknown',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
+        onTap: () => _showUserDetailsDialog(userId, data),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -731,22 +765,32 @@ class _AdminDashboardState extends State<AdminDashboard> {
         trailing: PopupMenuButton(
           itemBuilder: (context) => [
             PopupMenuItem(
-              value: 'approve',
+              value: 'edit',
               child: const Row(
                 children: [
-                  Icon(Icons.check, color: Colors.green),
+                  Icon(Icons.edit, color: Colors.blue),
                   SizedBox(width: 8),
-                  Text('Approve'),
+                  Text('Edit Details'),
                 ],
               ),
             ),
             PopupMenuItem(
-              value: 'reject',
+              value: 'reset_password',
               child: const Row(
                 children: [
-                  Icon(Icons.close, color: Colors.red),
+                  Icon(Icons.lock_reset, color: Colors.orange),
                   SizedBox(width: 8),
-                  Text('Reject'),
+                  Text('Reset Password'),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'change_role',
+              child: const Row(
+                children: [
+                  Icon(Icons.swap_horiz, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Change Role'),
                 ],
               ),
             ),
@@ -891,17 +935,43 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton.icon(
-                  onPressed: () =>
-                      _handleLawyerAction(lawyerId, 'approve', data),
-                  icon: const Icon(Icons.check, color: Colors.green),
-                  label: const Text('Approve'),
-                ),
+                if (data['status'] != 'verified')
+                  TextButton.icon(
+                    onPressed: () =>
+                        _handleLawyerAction(lawyerId, 'approve', data),
+                    icon: const Icon(Icons.check, color: Colors.green),
+                    label: const Text('Verify Lawyer'),
+                  ),
+                if (data['status'] == 'verified') ...[
+                  TextButton.icon(
+                    onPressed: () => _showEditUserDialog(lawyerId, data),
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    label: const Text('Edit Details'),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      String email = data['email'] ?? '';
+                      if (email.isNotEmpty) {
+                        AuthService.resetUserPassword(email: email);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '$email par password reset email send ho gaya!',
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.lock_reset, color: Colors.orange),
+                    label: const Text('Reset Password'),
+                  ),
+                ],
                 TextButton.icon(
                   onPressed: () =>
                       _handleLawyerAction(lawyerId, 'reject', data),
                   icon: const Icon(Icons.close, color: Colors.red),
-                  label: const Text('Reject'),
+                  label: const Text('Delete'),
                 ),
               ],
             ),
@@ -1180,19 +1250,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Future<UserModel?> _getCurrentUser() async {
-    try {
-      final session = await AuthService.getSavedUserSession();
-      if (session != null) {
-        return await AuthService.getUserById(session['userId'] as String);
-      }
-      return null;
-    } catch (e) {
-      print('❌ Error getting current user: $e');
-      return null;
-    }
-  }
-
   Color _getStatusColor(String? status) {
     switch (status) {
       case 'verified':
@@ -1335,7 +1392,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('User added successfully'),
+          content: Text('User successfully add ho gaya!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -1459,7 +1516,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     onPressed: () =>
                         _handleLawyerAction(lawyerId, 'approve', data),
                     icon: const Icon(Icons.check, size: 16),
-                    label: const Text('Approve'),
+                    label: const Text('Verify Lawyer'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
@@ -1469,12 +1526,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () =>
-                        _handleLawyerAction(lawyerId, 'reject', data),
-                    icon: const Icon(Icons.close, size: 16),
-                    label: const Text('Reject'),
+                    onPressed: () => _showEditUserDialog(lawyerId, data),
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Edit Details'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: const Color(0xFF8B4513),
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -1514,40 +1570,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
     Map<String, dynamic> data,
   ) async {
     try {
-      String newStatus = '';
       switch (action) {
-        case 'approve':
-          newStatus = 'approved';
+        case 'edit':
+          _showEditUserDialog(userId, data);
           break;
-        case 'reject':
-          newStatus = 'rejected';
+
+        case 'reset_password':
+          String email = data['email'] ?? '';
+          if (email.isNotEmpty) {
+            await AuthService.resetUserPassword(email: email);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$email par password reset email send ho gaya!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('User email not found'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
           break;
+
+        case 'change_role':
+          _showChangeRoleDialog(userId, data);
+          break;
+
         case 'delete':
-          await _firestore
-              .collection(AppConstants.usersCollection)
-              .doc(userId)
-              .delete();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('User deleted successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          return;
-      }
-
-      if (newStatus.isNotEmpty) {
-        await _firestore
-            .collection(AppConstants.usersCollection)
-            .doc(userId)
-            .update({'status': newStatus, 'updatedAt': DateTime.now()});
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('User $action successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+          await _showDeleteConfirmation(userId, data['name'] ?? 'Unknown User');
+          break;
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2174,6 +2228,623 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ],
       ),
     );
+  }
+
+  // User Management Helper Methods
+  void _showChangeRoleDialog(String userId, Map<String, dynamic> data) {
+    String currentRole = data['role'] ?? 'user';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change User Role'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Current Role: ${currentRole.toUpperCase()}'),
+            const SizedBox(height: 16),
+            const Text('Select New Role:'),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: currentRole,
+              onChanged: (value) {
+                if (value != null && value != currentRole) {
+                  Navigator.pop(context);
+                  _confirmRoleChange(userId, value);
+                }
+              },
+              items: const [
+                DropdownMenuItem(value: 'user', child: Text('User')),
+                DropdownMenuItem(value: 'lawyer', child: Text('Lawyer')),
+                DropdownMenuItem(value: 'admin', child: Text('Admin')),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmRoleChange(String userId, String newRole) async {
+    bool confirmed = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Role Change'),
+        content: Text(
+          'Are you sure you want to change this user\'s role to $newRole?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Change Role'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await AuthService.updateUserRole(userId: userId, newRole: newRole);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'User ka role $newRole mein successfully change ho gaya!',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to change role: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showDeleteConfirmation(String userId, String userName) async {
+    bool confirmed = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete User'),
+        content: Text(
+          'Are you sure you want to delete user "$userName"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete User'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await AuthService.deleteUserAccount(userId: userId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete user: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showEditUserDialog(String userId, Map<String, dynamic> data) {
+    final nameController = TextEditingController(text: data['name'] ?? '');
+    final emailController = TextEditingController(text: data['email'] ?? '');
+    final phoneController = TextEditingController(text: data['phone'] ?? '');
+
+    String? currentProfileImage = data['profileImage'];
+    File? selectedImage;
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit User Details'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Profile Image Section
+                _buildProfileImageSection(
+                  currentProfileImage,
+                  selectedImage,
+                  (imageFile) =>
+                      setDialogState(() => selectedImage = imageFile),
+                ),
+
+                const SizedBox(height: 20),
+
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email Address',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                ),
+
+                if (isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(width: 16),
+                        Text('Saving changes...'),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      setDialogState(() => isLoading = true);
+
+                      await _updateUserDetailsWithImage(
+                        userId,
+                        nameController.text.trim(),
+                        emailController.text.trim(),
+                        phoneController.text.trim(),
+                        data['email'] ?? '',
+                        selectedImage,
+                        currentProfileImage,
+                        setDialogState,
+                      );
+
+                      Navigator.pop(context);
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8B4513),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Update Details'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileImageSection(
+    String? currentImage,
+    File? selectedImage,
+    Function(File?) onImageSelected,
+  ) {
+    return Column(
+      children: [
+        // Current image preview
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(60),
+            border: Border.all(color: const Color(0xFF8B4513), width: 3),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(60),
+            child: selectedImage != null
+                ? Image.file(selectedImage, fit: BoxFit.cover)
+                : currentImage != null && currentImage.isNotEmpty
+                ? Image.network(
+                    currentImage,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Color(0xFF8B4513),
+                      );
+                    },
+                  )
+                : const Icon(Icons.person, size: 60, color: Color(0xFF8B4513)),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Upload/Change buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _pickImageFromCamera(onImageSelected),
+              icon: const Icon(Icons.camera_alt, size: 18),
+              label: const Text('Camera'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[100],
+                foregroundColor: Colors.blue[800],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => _pickImageFromGallery(onImageSelected),
+              icon: const Icon(Icons.photo_library, size: 18),
+              label: const Text('Gallery'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[100],
+                foregroundColor: Colors.green[800],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+            ),
+            if (selectedImage != null ||
+                (currentImage != null && currentImage.isNotEmpty))
+              ElevatedButton.icon(
+                onPressed: () => onImageSelected(null),
+                icon: const Icon(Icons.delete, size: 18),
+                label: const Text('Remove'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[100],
+                  foregroundColor: Colors.red[800],
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickImageFromCamera(Function(File?) onImageSelected) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 90,
+      );
+
+      if (image != null) {
+        onImageSelected(File(image.path));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Camera se image select nahi kar sakte: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _pickImageFromGallery(Function(File?) onImageSelected) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 90,
+      );
+
+      if (image != null) {
+        onImageSelected(File(image.path));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gallery se image select nahi kar sakte: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _updateUserDetailsWithImage(
+    String userId,
+    String newName,
+    String newEmail,
+    String newPhone,
+    String currentEmail,
+    File? selectedImage,
+    String? currentProfileImage,
+    StateSetter setDialogState,
+  ) async {
+    setDialogState(() {});
+
+    try {
+      bool emailChanged = newEmail != currentEmail;
+      String? updatedProfileImage = currentProfileImage;
+
+      // Upload new image if selected
+      if (selectedImage != null) {
+        setDialogState(() {});
+
+        String? imageUrl = await CloudinaryService.uploadImage(
+          file: selectedImage,
+          folder: 'profile_images',
+          publicId:
+              'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}',
+          width: 512,
+          height: 512,
+          crop: 'fill',
+        );
+
+        if (imageUrl != null) {
+          updatedProfileImage = imageUrl;
+          print('✅ Profile image uploaded: $imageUrl');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Image upload fail ho gaya! Details update nahi kar sakte.',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      // Update user details in Firestore
+      Map<String, dynamic> updateData = {
+        'name': newName,
+        'email': newEmail,
+        'phone': newPhone,
+        'updatedAt': DateTime.now(),
+      };
+
+      if (updatedProfileImage != null) {
+        updateData['profileImage'] = updatedProfileImage;
+      } else if (selectedImage == null && updatedProfileImage == null) {
+        updateData['profileImage'] = FieldValue.delete();
+      }
+
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .update(updateData);
+
+      // If email changed, update in Firebase Auth as well
+      if (emailChanged) {
+        try {
+          await AuthService.updateUserEmail(
+            userId: userId,
+            oldEmail: currentEmail,
+            newEmail: newEmail,
+          );
+        } catch (e) {
+          print('Email update in Firebase Auth failed: $e');
+          // Email updated in Firestore but not in Firebase Auth
+          // This will be handled gracefully
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User details aur image successfully update ho gaye!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update user details: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showUserDetailsDialog(String userId, Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${data['name'] ?? 'Unknown'} Details'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Profile Image Preview
+              Center(
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(
+                      color: const Color(0xFF8B4513),
+                      width: 2,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(50),
+                    child:
+                        data['profileImage'] != null &&
+                            data['profileImage'].isNotEmpty
+                        ? Image.network(
+                            data['profileImage'],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.person,
+                                size: 50,
+                                color: Color(0xFF8B4513),
+                              );
+                            },
+                          )
+                        : const Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Color(0xFF8B4513),
+                          ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              _buildDetailRow('Name', data['name'] ?? 'Not provided'),
+              _buildDetailRow('Email', data['email'] ?? 'Not provided'),
+              _buildDetailRow('Phone', data['phone'] ?? 'Not provided'),
+              _buildDetailRow('Role', (data['role'] ?? 'user').toUpperCase()),
+              _buildDetailRow(
+                'Status',
+                (data['status'] ?? 'unknown').toUpperCase(),
+              ),
+              _buildDetailRow('Created', _formatDate(data['createdAt'])),
+              if (data['updatedAt'] != null)
+                _buildDetailRow('Updated', _formatDate(data['updatedAt'])),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _showEditUserDialog(userId, data);
+            },
+            icon: const Icon(Icons.edit, size: 18),
+            label: const Text('Edit Details'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showChangeRoleDialog(userId, data);
+            },
+            child: const Text('Change Role'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              String email = data['email'] ?? '';
+              if (email.isNotEmpty) {
+                AuthService.resetUserPassword(email: email);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '$email par password reset email send ho gaya!',
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            child: const Text('Reset Password'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(dynamic timestamp) {
+    if (timestamp == null) return 'Unknown';
+
+    DateTime dateTime;
+    if (timestamp is Timestamp) {
+      dateTime = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      dateTime = timestamp;
+    } else {
+      return 'Unknown';
+    }
+
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   void _showDeleteAllDataDialog() {
