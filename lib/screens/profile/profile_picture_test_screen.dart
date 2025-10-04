@@ -25,7 +25,10 @@ class _ProfilePictureTestScreenState extends State<ProfilePictureTestScreen> {
   Future<void> _loadUserData() async {
     try {
       // Get current user
-      currentUser = await AuthService.getCurrentUserModel();
+      String? userId = AuthService.currentUser?.uid;
+      if (userId != null) {
+        currentUser = await AuthService.getUserById(userId);
+      }
 
       if (currentUser != null) {
         // Check if user has profile picture
