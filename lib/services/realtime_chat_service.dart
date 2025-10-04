@@ -7,7 +7,7 @@ class RealtimeChatService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static StreamSubscription? _currentSubscription;
 
-  // Real-time chat listener - jab bhi koi message aaye, immediately notify kare
+  // Real-time chat listener - whenever a message arrives, immediately notify
   static Stream<List<ChatMessageModel>> listenToChatMessages(String chatId) {
     return _firestore
         .collection(AppConstants.chatMessagesCollection)
@@ -64,7 +64,7 @@ class RealtimeChatService {
     List<String>? consultationIds,
   }) async {
     try {
-      // Pehle check karo ke chat already exist karta hai ya nahi
+      // First check if chat already exists
       QuerySnapshot existingChat = await _firestore
           .collection(AppConstants.chatsCollection)
           .where('lawyerId', isEqualTo: lawyerId)
@@ -74,7 +74,7 @@ class RealtimeChatService {
 
       if (existingChat.docs.isNotEmpty) {
         print('Chat already exists');
-        return; // Chat already exist karta hai
+        return; // Chat already exists
       }
 
       // Get user info

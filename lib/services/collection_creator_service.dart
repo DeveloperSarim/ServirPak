@@ -19,7 +19,7 @@ class CollectionCreatorService {
       // Create lawyers collection
       await _createLawyersCollection();
 
-      // Create KYC documents collection
+      // Create verification documents collection
       await _createKycCollection();
 
       // Create cities collection

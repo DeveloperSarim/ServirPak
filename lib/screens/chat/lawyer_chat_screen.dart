@@ -21,7 +21,7 @@ class LawyerChatScreen extends StatefulWidget {
 
 class _LawyerChatScreenState extends State<LawyerChatScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final ChatService _chatService = ChatService();
+  // final ChatService _chatService = ChatService();
   final ScrollController _scrollController = ScrollController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -161,7 +161,7 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
           Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
-            'Conversation start karo',
+            'Start conversation',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -170,7 +170,7 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '${widget.userName} ko message bhejein',
+            'Send a message to ${widget.userName}',
             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
@@ -327,7 +327,7 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
     if (AuthService.currentUser?.uid == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Login nahi hai'),
+          content: Text('Please login first'),
           backgroundColor: Colors.red,
         ),
       );
@@ -346,7 +346,7 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Message send nahi ho saka: $e'),
+            content: Text('Message could not be sent: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -386,7 +386,7 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.block, color: Colors.red),
-              title: const Text('Client ko Block karo'),
+              title: const Text('Block Client'),
               onTap: () {
                 Navigator.pop(context);
                 // TODO: Block user functionality

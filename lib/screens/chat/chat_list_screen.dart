@@ -14,7 +14,7 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final ChatService _chatService = ChatService();
+  // final ChatService _chatService = ChatService();
 
   @override
   Widget build(BuildContext context) {
@@ -258,8 +258,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Naya Chat Shuru Karo'),
-        content: const Text('Demo lawyer se chat start karo'),
+        title: const Text('Start New Chat'),
+        content: const Text('Start chat with demo lawyer'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -282,7 +282,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   void _startDemoChat() {
-    // Demo lawyer ke liye chat start karo
+    // Start chat with demo lawyer
     final demoLawyerId = 'demo_lawyer_123';
     final demoLawyername = 'Demo Lawyer';
     final demoUserId = AuthService.currentUser?.uid ?? '';

@@ -38,7 +38,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Password reset email successfully bhej diya gaye! Aapka email check karain.',
+              'Password reset email sent successfully! Please check your email.',
               style: TextStyle(fontSize: 16),
             ),
             backgroundColor: Colors.green,
@@ -129,8 +129,8 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
 
                     Text(
                       _emailSent
-                          ? 'Aapka email check karain aur new password set karain'
-                          : 'Aapko email par password reset link bhej diya jayega',
+                          ? 'Please check your email and set a new password'
+                          : 'Password reset link will be sent to your email',
                       style: const TextStyle(fontSize: 16, color: Colors.grey),
                       textAlign: TextAlign.center,
                     ),
@@ -347,7 +347,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Agar aapko email nahi mila toh spam folder check karein ya contact support karein.',
+                              'If you don\'t receive the email, check your spam folder or contact support.',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],

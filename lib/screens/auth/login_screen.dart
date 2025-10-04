@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../constants/app_constants.dart';
 import '../home/home_screen.dart';
+import '../profile/profile_picture_upload_screen.dart';
 import 'register_screen.dart';
 import 'forget_password_screen.dart';
 
@@ -48,13 +49,32 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user != null && mounted) {
         // Check user status
         if (user.isApproved || user.isVerified) {
-          print('✅ User approved/verified, navigating to HomeScreen');
-          print('👤 User role: ${user.role}');
+          print('✅ User approved/verified, checking profile picture');
 
-          // Navigate to HomeScreen which will handle role-based routing
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
+          // Check if user has profile picture
+          bool hasProfilePic = await AuthService.hasProfilePicture(user.id);
+
+          if (hasProfilePic) {
+            print('✅ User has profile picture, navigating to HomeScreen');
+            // Navigate to HomeScreen which will handle role-based routing
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          } else {
+            print(
+              '❌ User does not have profile picture, navigating to upload screen',
+            );
+            // Navigate to profile picture upload screen
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => ProfilePictureUploadScreen(
+                  userId: user.id,
+                  userName: user.name,
+                  userEmail: user.email,
+                ),
+              ),
+            );
+          }
         } else {
           print('❌ User not approved/verified, showing status dialog');
           _showStatusDialog(user.status);

@@ -91,7 +91,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                   ],
                 ),
-                label: 'KYC',
+                label: 'Verification',
               ),
               const BottomNavigationBarItem(
                 icon: Icon(Icons.settings),
@@ -113,7 +113,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 2:
         return _buildLawyersManagement();
       case 3:
-        return _buildKycManagement();
+        return _buildVerificationManagement();
       case 4:
         return _buildSettings();
       default:
@@ -260,7 +260,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Khush Aamdeed, Admin!',
+            'Welcome, Admin!',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -269,20 +269,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Apna legal platform asani se manage karein',
+            'Manage your legal platform with ease',
             style: TextStyle(fontSize: 16, color: Colors.white70),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               _buildQuickActionButton(
-                'User Add Karo',
+                'Add User',
                 Icons.person_add,
                 () => _showAddUserDialog(),
               ),
               const SizedBox(width: 12),
               _buildQuickActionButton(
-                'Lawyer Verify Karo',
+                'Verify Lawyer',
                 Icons.verified_user,
                 () => setState(() => _selectedIndex = 3),
               ),
@@ -1104,12 +1104,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildKycManagement() {
+  Widget _buildVerificationManagement() {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
-          'KYC Management',
+          'Verification Management',
           style: TextStyle(
             color: Color(0xFF8B4513),
             fontSize: 20,
@@ -1139,7 +1139,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   Icon(Icons.verified_user, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
                   Text(
-                    'No pending KYC verifications',
+                    'No pending verifications',
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                   Text(
@@ -1515,7 +1515,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('User successfully add ho gaya!'),
+          content: Text('User successfully added!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -1609,9 +1609,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             const SizedBox(height: 16),
 
-            // KYC Documents
+            // Verification Documents
             const Text(
-              'KYC Documents:',
+              'Verification Documents:',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(height: 8),
@@ -1704,7 +1704,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             await AuthService.resetUserPassword(email: email);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('$email par password reset email send ho gaya!'),
+                content: Text('Password reset email sent to $email!'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -2425,9 +2425,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         await AuthService.updateUserRole(userId: userId, newRole: newRole);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'User ka role $newRole mein successfully change ho gaya!',
-            ),
+            content: Text('User role successfully changed to $newRole!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -2795,7 +2793,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Camera se image select nahi kar sakte: $e'),
+          content: Text('Cannot select image from camera: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -2827,7 +2825,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gallery se image select nahi kar sakte: $e'),
+          content: Text('Cannot select image from gallery: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -2882,7 +2880,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Image upload fail hai! Demo URL use kar rahe hain.\n'
+                'Image upload failed! Using demo URL.\n'
                 'Web: ${kIsWeb}\n'
                 'Has image bytes: ${selectedImageBytes != null}\n'
                 'Has image file: ${selectedImage != null}',
@@ -2931,7 +2929,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('User details aur image successfully update ho gaye!'),
+          content: Text('User details and image successfully updated!'),
           backgroundColor: Colors.green,
         ),
       );

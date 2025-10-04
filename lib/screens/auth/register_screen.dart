@@ -4,6 +4,7 @@ import '../../services/city_service.dart';
 import '../../constants/app_constants.dart';
 import '../../models/city_model.dart';
 import '../home/home_screen.dart';
+import '../profile/profile_picture_upload_screen.dart';
 import '../lawyer/lawyer_registration_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -68,7 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Cities load nahi ho rahi: $e'),
+            content: Text('Cities could not be loaded: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -110,8 +111,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               _selectedRole == AppConstants.adminRole
                   ? 'Account created successfully!'
                   : _selectedRole == AppConstants.lawyerRole
-                  ? 'Account created! Ab apna lawyer profile complete karein.'
-                  : 'Account created successfully! Ab aap login kar sakte hain.',
+                  ? 'Account created! Now complete your lawyer profile.'
+                  : 'Account created successfully! You can now login.',
             ),
             backgroundColor: Colors.green,
           ),
@@ -139,7 +140,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           );
         } else {
-          Navigator.of(context).pop();
+          // For regular users, check if they need to upload profile picture
+          bool hasProfilePic = await AuthService.hasProfilePicture(user.id);
+
+          if (hasProfilePic) {
+            Navigator.of(context).pop();
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => ProfilePictureUploadScreen(
+                  userId: user.id,
+                  userName: user.name,
+                  userEmail: user.email,
+                ),
+              ),
+            );
+          }
         }
       }
     } catch (e) {

@@ -264,6 +264,47 @@ class AuthService {
     }
   }
 
+  // Check if user has profile picture
+  static Future<bool> hasProfilePicture(String userId) async {
+    try {
+      DocumentSnapshot userDoc = await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .get();
+
+      if (userDoc.exists) {
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        String? profileImage = userData['profileImage'];
+
+        // Check if profile image exists and is not empty
+        return profileImage != null && profileImage.isNotEmpty;
+      }
+      return false;
+    } catch (e) {
+      print('Error checking profile picture: $e');
+      return false;
+    }
+  }
+
+  // Get user profile picture URL
+  static Future<String?> getUserProfilePicture(String userId) async {
+    try {
+      DocumentSnapshot userDoc = await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .get();
+
+      if (userDoc.exists) {
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        return userData['profileImage'];
+      }
+      return null;
+    } catch (e) {
+      print('Error getting profile picture: $e');
+      return null;
+    }
+  }
+
   // Update user status (Admin only)
   static Future<void> updateUserStatus({
     required String userId,

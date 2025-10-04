@@ -10,7 +10,7 @@ class CloudinaryService {
   // Base URL for Cloudinary API
   static String get _baseUrl => CloudinaryConfig.baseUrl;
 
-  // Document upload karne ke liye - Web Compatible
+  // Document upload for Web Compatible
   static Future<String?> uploadDocument({
     required dynamic file, // File for mobile, Uint8List for web
     required String folder,
@@ -81,7 +81,7 @@ class CloudinaryService {
     return null;
   }
 
-  // Image upload karne ke liye - Web Compatible
+  // Image upload for Web Compatible
   static Future<String?> uploadImage({
     required dynamic file, // File for mobile, Uint8List for web
     required String folder,
@@ -155,7 +155,7 @@ class CloudinaryService {
     return null;
   }
 
-  // Multiple files upload karne ke liye - Web Compatible
+  // Multiple files upload for Web Compatible
   static Future<List<String>> uploadMultipleDocuments({
     required List<dynamic>
     files, // List<File> for mobile, List<Uint8List> for web

@@ -88,7 +88,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
         });
       }
     } catch (e) {
-      _showErrorSnackBar('Image pick karne mein error: $e');
+      _showErrorSnackBar('Error picking image: $e');
     }
   }
 
@@ -121,7 +121,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
         });
       }
     } catch (e) {
-      _showErrorSnackBar('Document pick karne mein error: $e');
+      _showErrorSnackBar('Error picking document: $e');
     }
   }
 
@@ -146,7 +146,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
         setState(() {
           _uploadProgress[documentType] = false;
         });
-        _showErrorSnackBar('$documentType upload fail ho gaya');
+        _showErrorSnackBar('$documentType upload failed');
       }
     } catch (e) {
       setState(() {
@@ -182,7 +182,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
         setState(() {
           _uploadProgress['profile'] = false;
         });
-        _showErrorSnackBar('Profile image upload fail ho gaya');
+        _showErrorSnackBar('Profile image upload failed');
       }
     } catch (e) {
       setState(() {
@@ -265,7 +265,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Lawyer registration successful! Admin approval ka wait karein.',
+              'Lawyer registration successful! Please wait for admin approval.',
             ),
             backgroundColor: Colors.green,
           ),
@@ -398,7 +398,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Apna profile complete karke verification ke liye apply karein',
+                  'Complete your profile and apply for verification',
                   style: TextStyle(fontSize: 16, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),

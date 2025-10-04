@@ -143,7 +143,7 @@ class DemoSeederService {
       // Create demo lawyers
       await _createDemoLawyers();
 
-      // Create demo KYC documents
+      // Create demo verification documents
       await _createDemoKycDocuments();
 
       print('✅ Demo data seeding completed successfully!');
@@ -304,7 +304,7 @@ class DemoSeederService {
   }
 
   static Future<void> _createDemoKycDocuments() async {
-    print('📄 Creating demo KYC documents...');
+    print('📄 Creating demo verification documents...');
 
     for (var docData in demoKycDocuments) {
       try {
@@ -378,7 +378,7 @@ class DemoSeederService {
         await doc.reference.delete();
       }
 
-      // Clear KYC documents collection
+      // Clear verification documents collection
       QuerySnapshot kycDocs = await _firestore
           .collection(AppConstants.kycCollection)
           .get();

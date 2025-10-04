@@ -403,14 +403,14 @@ class DemoDataService {
       if (consultationsSnapshot.docs.isEmpty) return;
 
       List<String> chatMessages = [
-        'Assalam-o-Alaikum! Mere paas legal problem hai.',
-        'Hello! Mei aapki madad kar sakta hun. Batayein kya problem hai?',
-        'Mere property dispute ka matter hai.',
-        'Acha, property dispute hain. Details bhejein.',
-        'Documents bhi hain jo show kar sakta hun.',
+        'Hello! I have a legal problem.',
+        'Hello! I can help you. What is the problem?',
+        'I have a property dispute matter.',
+        'Okay, it\'s a property dispute. Please send details.',
+        'I also have documents that I can show you.',
       ];
 
-      ChatService chatService = ChatService();
+      // ChatService chatService = ChatService();
 
       for (var consultationDoc in consultationsSnapshot.docs) {
         String lawyerId = consultationDoc['lawyerId'] as String;

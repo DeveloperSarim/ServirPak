@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../services/chat_service.dart';
-import '../../constants/app_constants.dart';
 
 class ChatScreen extends StatefulWidget {
   final String lawyerId;
@@ -22,7 +21,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final ChatService _chatService = ChatService();
+  // final ChatService _chatService = ChatService();
   final ScrollController _scrollController = ScrollController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -347,7 +346,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Message send nahi ho saka: $e'),
+            content: Text('Message could not be sent: $e'),
             backgroundColor: Colors.red,
           ),
         );
