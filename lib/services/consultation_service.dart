@@ -17,6 +17,13 @@ class ConsultationService {
     required DateTime scheduledAt,
   }) async {
     try {
+      print('🔍 ConsultationService: Creating consultation');
+      print('🔍 User ID: $userId');
+      print('🔍 Lawyer ID: $lawyerId');
+      print('🔍 Type: $type');
+      print('🔍 Category: $category');
+      print('🔍 Collection: ${AppConstants.consultationsCollection}');
+
       ConsultationModel consultation = ConsultationModel(
         id: '', // Will be set by Firestore
         userId: userId,
@@ -31,14 +38,26 @@ class ConsultationService {
         createdAt: DateTime.now(),
       );
 
+      print('🔍 Consultation data: ${consultation.toFirestore()}');
+
       DocumentReference docRef = await _firestore
           .collection(AppConstants.consultationsCollection)
           .add(consultation.toFirestore());
 
-      print('Consultation created successfully: ${docRef.id}');
+      print('✅ Consultation created successfully: ${docRef.id}');
+
+      // Verify the consultation was created
+      DocumentSnapshot createdDoc = await docRef.get();
+      if (createdDoc.exists) {
+        print('✅ Verification: Consultation document exists in database');
+        print('✅ Document data: ${createdDoc.data()}');
+      } else {
+        print('❌ Verification: Consultation document not found in database');
+      }
+
       return docRef.id;
     } catch (e) {
-      print('Error creating consultation: $e');
+      print('❌ Error creating consultation: $e');
       rethrow;
     }
   }
@@ -79,17 +98,34 @@ class ConsultationService {
     String lawyerId,
   ) async {
     try {
+      print(
+        '🔍 ConsultationService: Getting consultations for lawyer: $lawyerId',
+      );
+      print('🔍 Collection: ${AppConstants.consultationsCollection}');
+
       QuerySnapshot snapshot = await _firestore
           .collection(AppConstants.consultationsCollection)
           .where('lawyerId', isEqualTo: lawyerId)
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs
-          .map((doc) => ConsultationModel.fromFirestore(doc))
-          .toList();
+      print('🔍 Query result: ${snapshot.docs.length} documents found');
+
+      if (snapshot.docs.isNotEmpty) {
+        print('🔍 First document data: ${snapshot.docs.first.data()}');
+      }
+
+      List<ConsultationModel> consultations = snapshot.docs.map((doc) {
+        print('🔍 Document ID: ${doc.id}, Data: ${doc.data()}');
+        return ConsultationModel.fromFirestore(doc);
+      }).toList();
+
+      print(
+        '✅ ConsultationService: Returning ${consultations.length} consultations for lawyer',
+      );
+      return consultations;
     } catch (e) {
-      print('Error getting consultations by lawyer ID: $e');
+      print('❌ Error getting consultations by lawyer ID: $e');
       return [];
     }
   }

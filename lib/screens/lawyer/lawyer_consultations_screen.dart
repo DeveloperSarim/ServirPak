@@ -17,34 +17,15 @@ class LawyerConsultationsScreen extends StatefulWidget {
 
 class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  List<ConsultationModel> _consultations = [];
   String _selectedFilter = 'All';
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadConsultations();
-  }
-
-  Future<void> _loadConsultations() async {
-    try {
-      final session = await AuthService.getSavedUserSession();
-      String lawyerId = session['userId'] as String;
-
-      _consultations = await ConsultationService.getConsultationsByLawyerId(
-        lawyerId,
-      );
-
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Error loading consultations: $e');
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -62,7 +43,24 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadConsultations,
+            onPressed: () {
+              setState(() {
+                _isLoading = true;
+              });
+              Future.delayed(const Duration(milliseconds: 500), () {
+                setState(() {
+                  _isLoading = false;
+                });
+              });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: _debugConsultations,
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _createTestConsultation,
           ),
         ],
       ),
@@ -112,48 +110,120 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
   }
 
   Widget _buildConsultationsList() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    return StreamBuilder<QuerySnapshot>(
+      stream: _getConsultationsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting && _isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    List<ConsultationModel> filteredConsultations = _consultations;
-    if (_selectedFilter != 'All') {
-      filteredConsultations = _consultations.where((consultation) {
-        return consultation.status.toLowerCase() ==
-            _selectedFilter.toLowerCase();
-      }).toList();
-    }
-
-    if (filteredConsultations.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.folder_open, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(
-              _selectedFilter == 'All'
-                  ? 'No consultations yet'
-                  : 'No $_selectedFilter consultations',
-              style: const TextStyle(fontSize: 18, color: Colors.grey),
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Error loading consultations: ${snapshot.error}'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      setState(() {
+                        _isLoading = false;
+                      });
+                    });
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
-            const Text(
-              'Your consultations will appear here',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
-        ),
-      );
-    }
+          );
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredConsultations.length,
-      itemBuilder: (context, index) {
-        final consultation = filteredConsultations[index];
-        return _buildConsultationCard(consultation);
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.folder_open, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  _selectedFilter == 'All'
+                      ? 'No consultations yet'
+                      : 'No $_selectedFilter consultations',
+                  style: const TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                const Text(
+                  'Your consultations will appear here',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        List<ConsultationModel> consultations = snapshot.data!.docs.map((doc) {
+          return ConsultationModel.fromFirestore(doc);
+        }).toList();
+
+        List<ConsultationModel> filteredConsultations = consultations;
+        if (_selectedFilter != 'All') {
+          filteredConsultations = consultations.where((consultation) {
+            return consultation.status.toLowerCase() ==
+                _selectedFilter.toLowerCase();
+          }).toList();
+        }
+
+        if (filteredConsultations.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.folder_open, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  'No $_selectedFilter consultations',
+                  style: const TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                const Text(
+                  'Try changing the filter',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: filteredConsultations.length,
+          itemBuilder: (context, index) {
+            final consultation = filteredConsultations[index];
+            return _buildConsultationCard(consultation);
+          },
+        );
       },
     );
+  }
+
+  Stream<QuerySnapshot> _getConsultationsStream() async* {
+    try {
+      final session = await AuthService.getSavedUserSession();
+      String lawyerId = session['userId'] as String;
+
+      yield* _firestore
+          .collection(AppConstants.consultationsCollection)
+          .where('lawyerId', isEqualTo: lawyerId)
+          .orderBy('createdAt', descending: true)
+          .snapshots();
+    } catch (e) {
+      print('Error getting consultations stream: $e');
+      yield* Stream.empty();
+    }
   }
 
   Widget _buildConsultationCard(ConsultationModel consultation) {
@@ -549,9 +619,6 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
         status: status,
       );
 
-      // Refresh consultations
-      await _loadConsultations();
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Consultation $status successfully!'),
@@ -562,6 +629,98 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to update consultation: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _debugConsultations() async {
+    try {
+      final session = await AuthService.getSavedUserSession();
+      String lawyerId = session['userId'] as String;
+
+      print('🔍 DEBUG: Lawyer ID: $lawyerId');
+
+      // Get all consultations in the collection
+      QuerySnapshot allConsultations = await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .get();
+
+      print(
+        '🔍 DEBUG: Total consultations in collection: ${allConsultations.docs.length}',
+      );
+
+      for (var doc in allConsultations.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        print('🔍 DEBUG: Consultation ${doc.id}:');
+        print('  - User ID: ${data['userId']}');
+        print('  - Lawyer ID: ${data['lawyerId']}');
+        print('  - Status: ${data['status']}');
+        print('  - Category: ${data['category']}');
+        print('  - Type: ${data['type']}');
+        print('  - Description: ${data['description']}');
+        print('  - Created: ${data['createdAt']}');
+        print('  ---');
+      }
+
+      // Get consultations for this specific lawyer
+      QuerySnapshot lawyerConsultations = await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .where('lawyerId', isEqualTo: lawyerId)
+          .get();
+
+      print(
+        '🔍 DEBUG: Consultations for this lawyer: ${lawyerConsultations.docs.length}',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Debug info printed to console. Total: ${allConsultations.docs.length}, For lawyer: ${lawyerConsultations.docs.length}',
+          ),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    } catch (e) {
+      print('❌ DEBUG Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Debug error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _createTestConsultation() async {
+    try {
+      final session = await AuthService.getSavedUserSession();
+      String lawyerId = session['userId'] as String;
+
+      // Create a test consultation
+      await ConsultationService.createConsultation(
+        userId: 'test_user_123',
+        lawyerId: lawyerId,
+        type: 'free',
+        category: 'Family Law',
+        city: 'Karachi',
+        description: 'Test consultation for debugging purposes',
+        price: 0.0,
+        scheduledAt: DateTime.now().add(const Duration(days: 1)),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Test consultation created successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('❌ Test consultation error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create test consultation: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );

@@ -634,7 +634,7 @@ class _SimpleBookingScreenState extends State<SimpleBookingScreen> {
       double price = AppConstants.consultationPricing[_selectedType] ?? 0.0;
 
       // Create consultation
-      await ConsultationService.createConsultation(
+      String consultationId = await ConsultationService.createConsultation(
         userId: widget.user?.id ?? '',
         lawyerId: widget.lawyer.id,
         type: _selectedType,
@@ -644,6 +644,12 @@ class _SimpleBookingScreenState extends State<SimpleBookingScreen> {
         price: price,
         scheduledAt: scheduledAt,
       );
+
+      print('✅ Consultation created with ID: $consultationId');
+      print('✅ User ID: ${widget.user?.id}');
+      print('✅ Lawyer ID: ${widget.lawyer.id}');
+      print('✅ Type: $_selectedType');
+      print('✅ Category: $_selectedCategory');
 
       // Show success message
       if (price > 0) {

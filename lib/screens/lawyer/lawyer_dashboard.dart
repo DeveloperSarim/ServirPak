@@ -394,6 +394,100 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
     );
   }
 
+  Widget _buildConsultationActionCard() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _getPendingConsultationsStream(),
+      builder: (context, snapshot) {
+        int pendingCount = 0;
+        if (snapshot.hasData) {
+          pendingCount = snapshot.data!.docs.length;
+        }
+
+        return Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LawyerConsultationsScreen(),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B4513).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.assignment,
+                          color: Color(0xFF8B4513),
+                          size: 24,
+                        ),
+                      ),
+                      if (pendingCount > 0)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '$pendingCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Consultations',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (pendingCount > 0)
+                    Text(
+                      '$pendingCount pending',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildStatsCards() {
     int totalCases = _consultations.length;
     int activeCases = _consultations
@@ -557,11 +651,7 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
               Icons.message,
               const Color(0xFF1E88E5),
             ),
-            _buildActionCard(
-              'Consultations',
-              Icons.assignment,
-              const Color(0xFF8B4513),
-            ),
+            _buildConsultationActionCard(),
           ],
         ),
       ],
@@ -897,9 +987,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
         status: status,
       );
 
-      // Refresh data
-      await _loadLawyerData();
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Consultation $status successfully'),
@@ -913,6 +1000,38 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  Stream<QuerySnapshot> _getConsultationsStream() async* {
+    try {
+      final session = await AuthService.getSavedUserSession();
+      String lawyerId = session['userId'] as String;
+
+      yield* _firestore
+          .collection(AppConstants.consultationsCollection)
+          .where('lawyerId', isEqualTo: lawyerId)
+          .orderBy('createdAt', descending: true)
+          .snapshots();
+    } catch (e) {
+      print('Error getting consultations stream: $e');
+      yield* Stream.empty();
+    }
+  }
+
+  Stream<QuerySnapshot> _getPendingConsultationsStream() async* {
+    try {
+      final session = await AuthService.getSavedUserSession();
+      String lawyerId = session['userId'] as String;
+
+      yield* _firestore
+          .collection(AppConstants.consultationsCollection)
+          .where('lawyerId', isEqualTo: lawyerId)
+          .where('status', isEqualTo: AppConstants.pendingStatus)
+          .snapshots();
+    } catch (e) {
+      print('Error getting pending consultations stream: $e');
+      yield* Stream.empty();
     }
   }
 
