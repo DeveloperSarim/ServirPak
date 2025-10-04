@@ -9,11 +9,11 @@ import '../../models/consultation_model.dart';
 import '../auth/login_screen.dart';
 import '../settings/settings_screen.dart';
 import 'lawyer_analytics_screen.dart';
-import 'lawyer_messages_screen.dart';
 import 'lawyer_documents_screen.dart';
 import 'lawyer_schedule_screen.dart';
 import 'lawyer_client_search_screen.dart';
 import 'lawyer_chat_list_screen.dart';
+import 'lawyer_consultations_screen.dart';
 import '../../utils/firebase_setup_helper.dart';
 import '../../utils/responsive_helper.dart';
 import '../../services/demo_data_service.dart';
@@ -557,6 +557,11 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
               Icons.message,
               const Color(0xFF1E88E5),
             ),
+            _buildActionCard(
+              'Consultations',
+              Icons.assignment,
+              const Color(0xFF8B4513),
+            ),
           ],
         ),
       ],
@@ -593,6 +598,13 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             _showCaseNotesDialog();
           } else if (title == 'Billing') {
             _showBillingDialog();
+          } else if (title == 'Consultations') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LawyerConsultationsScreen(),
+              ),
+            );
           } else {
             // Handle other actions
             ScaffoldMessenger.of(context).showSnackBar(
@@ -646,7 +658,14 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
               ),
             ),
             TextButton(
-              onPressed: () => setState(() => _selectedIndex = 1),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LawyerConsultationsScreen(),
+                  ),
+                );
+              },
               child: const Text('View All'),
             ),
           ],

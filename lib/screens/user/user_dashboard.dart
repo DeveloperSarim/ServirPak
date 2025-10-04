@@ -12,7 +12,8 @@ import '../auth/login_screen.dart';
 // import '../consultation/consultation_booking_screen.dart';
 import 'user_chat_list_screen.dart';
 import '../profile/user_profile_screen.dart';
-import '../consultation/consultation_booking_screen.dart';
+import 'simple_booking_screen.dart';
+import 'lawyer_list_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
 
 class UserDashboard extends StatefulWidget {
@@ -1053,7 +1054,7 @@ class _UserDashboardState extends State<UserDashboard> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ConsultationBookingScreen(
+                          builder: (context) => SimpleBookingScreen(
                             lawyer: lawyerModel,
                             user: currentUser,
                           ),
@@ -1143,122 +1144,45 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Widget _buildFindLawyers() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Find Lawyers'),
-        backgroundColor: const Color(0xFF8B4513), // Saddle Brown
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search lawyers by name, specialization, or location',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+          const Icon(Icons.search, size: 80, color: Color(0xFF8B4513)),
+          const SizedBox(height: 20),
+          const Text(
+            'Find Lawyers',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Browse and book consultations with qualified lawyers',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 30),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LawyerListScreen(),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF8B4513),
-                  ), // Saddle Brown
-                ),
+              );
+            },
+            icon: const Icon(Icons.search),
+            label: const Text('Browse Lawyers'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-          ),
-
-          // Filters
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      labelText: 'Specialization',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('All')),
-                      DropdownMenuItem(
-                        value: 'criminal',
-                        child: Text('Criminal Law'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'family',
-                        child: Text('Family Law'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'property',
-                        child: Text('Property Law'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      _handleSpecializationFilter(value);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      labelText: 'City',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('All Cities')),
-                      DropdownMenuItem(value: 'lahore', child: Text('Lahore')),
-                      DropdownMenuItem(
-                        value: 'karachi',
-                        child: Text('Karachi'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'islamabad',
-                        child: Text('Islamabad'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      _handleCityFilter(value);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Lawyers List
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection(AppConstants.lawyersCollection)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    final doc = snapshot.data!.docs[index];
-                    final data = doc.data() as Map<String, dynamic>;
-
-                    return _buildLawyerListItem(data, index);
-                  },
-                );
-              },
             ),
           ),
         ],
@@ -1410,7 +1334,7 @@ class _UserDashboardState extends State<UserDashboard> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ConsultationBookingScreen(
+                            builder: (context) => SimpleBookingScreen(
                               lawyer: lawyerModel,
                               user: currentUser,
                             ),
