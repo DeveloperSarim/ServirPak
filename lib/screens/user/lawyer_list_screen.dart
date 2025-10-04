@@ -76,11 +76,13 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
       color: Colors.white,
       child: Column(
         children: [
-          // Category Filter
+          // Specialization Filter with Icons
           Row(
             children: [
+              const Icon(Icons.category, color: Color(0xFF8B4513), size: 20),
+              const SizedBox(width: 8),
               const Text(
-                'Category:',
+                'Specialization:',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 12),
@@ -96,14 +98,7 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                       vertical: 8,
                     ),
                   ),
-                  items: ['All', ...AppConstants.legalCategories].map((
-                    category,
-                  ) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
+                  items: _getSpecializationItems(),
                   onChanged: (value) =>
                       setState(() => _selectedCategory = value!),
                 ),
@@ -115,6 +110,8 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
           // City Filter
           Row(
             children: [
+              const Icon(Icons.location_on, color: Color(0xFF8B4513), size: 20),
+              const SizedBox(width: 8),
               const Text(
                 'City:',
                 style: TextStyle(fontWeight: FontWeight.w600),
@@ -132,17 +129,7 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                       vertical: 8,
                     ),
                   ),
-                  items:
-                      [
-                        'All',
-                        'Karachi',
-                        'Lahore',
-                        'Islamabad',
-                        'Rawalpindi',
-                        'Faisalabad',
-                      ].map((city) {
-                        return DropdownMenuItem(value: city, child: Text(city));
-                      }).toList(),
+                  items: _getCityItems(),
                   onChanged: (value) => setState(() => _selectedCity = value!),
                 ),
               ),
@@ -229,6 +216,156 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
     return query.snapshots();
   }
 
+  List<DropdownMenuItem<String>> _getSpecializationItems() {
+    return [
+      const DropdownMenuItem(
+        value: 'All',
+        child: Row(
+          children: [
+            Icon(Icons.all_inclusive, size: 16, color: Colors.grey),
+            SizedBox(width: 8),
+            Text('All Specializations'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Tax Law',
+        child: Row(
+          children: [
+            Icon(Icons.account_balance, size: 16, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Tax Law'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Criminal Law',
+        child: Row(
+          children: [
+            Icon(Icons.gavel, size: 16, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Criminal Law'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Family Law',
+        child: Row(
+          children: [
+            Icon(Icons.family_restroom, size: 16, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Family Law'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Corporate Law',
+        child: Row(
+          children: [
+            Icon(Icons.business, size: 16, color: Colors.purple),
+            SizedBox(width: 8),
+            Text('Corporate Law'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Property Law',
+        child: Row(
+          children: [
+            Icon(Icons.home, size: 16, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Property Law'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Immigration Law',
+        child: Row(
+          children: [
+            Icon(Icons.flight_takeoff, size: 16, color: Colors.teal),
+            SizedBox(width: 8),
+            Text('Immigration Law'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Labor Law',
+        child: Row(
+          children: [
+            Icon(Icons.work, size: 16, color: Colors.indigo),
+            SizedBox(width: 8),
+            Text('Labor Law'),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  List<DropdownMenuItem<String>> _getCityItems() {
+    return [
+      const DropdownMenuItem(
+        value: 'All',
+        child: Row(
+          children: [
+            Icon(Icons.location_city, size: 16, color: Colors.grey),
+            SizedBox(width: 8),
+            Text('All Cities'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Karachi',
+        child: Row(
+          children: [
+            Icon(Icons.location_city, size: 16, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Karachi'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Lahore',
+        child: Row(
+          children: [
+            Icon(Icons.location_city, size: 16, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Lahore'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Islamabad',
+        child: Row(
+          children: [
+            Icon(Icons.location_city, size: 16, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Islamabad'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Rawalpindi',
+        child: Row(
+          children: [
+            Icon(Icons.location_city, size: 16, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Rawalpindi'),
+          ],
+        ),
+      ),
+      const DropdownMenuItem(
+        value: 'Faisalabad',
+        child: Row(
+          children: [
+            Icon(Icons.location_city, size: 16, color: Colors.purple),
+            SizedBox(width: 8),
+            Text('Faisalabad'),
+          ],
+        ),
+      ),
+    ];
+  }
+
   Widget _buildLawyerCard(String lawyerId, Map<String, dynamic> data) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -255,10 +392,11 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(30),
                     child:
-                        data['profileImage'] != null &&
-                            data['profileImage'].isNotEmpty
+                        (data['profileImage'] as String?) != null &&
+                            (data['profileImage'] as String?)?.isNotEmpty ==
+                                true
                         ? Image.network(
-                            data['profileImage'],
+                            data['profileImage'] as String? ?? '',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return const Icon(
@@ -283,7 +421,7 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        data['name'] ?? 'Unknown Lawyer',
+                        data['name'] as String? ?? 'Unknown Lawyer',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -291,11 +429,48 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        data['specialization'] ?? 'General Law',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
+                      // Specialization Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getSpecializationColor(
+                            data['specialization'] as String?,
+                          ).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _getSpecializationColor(
+                              data['specialization'] as String?,
+                            ).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getSpecializationIcon(
+                                data['specialization'] as String?,
+                              ),
+                              size: 14,
+                              color: _getSpecializationColor(
+                                data['specialization'] as String?,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              data['specialization'] as String? ??
+                                  'General Law',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _getSpecializationColor(
+                                  data['specialization'] as String?,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -304,14 +479,14 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                           const Icon(Icons.star, color: Colors.amber, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${data['rating'] ?? 0.0}',
+                            '${(data['rating'] as num?)?.toDouble() ?? 0.0}',
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(width: 16),
                           const Icon(Icons.work, color: Colors.grey, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${data['experience'] ?? 0} years',
+                            '${data['experience'] as String? ?? '0'} years',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
@@ -326,7 +501,7 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${data['city'] ?? 'Unknown'}, ${data['province'] ?? 'Unknown'}',
+                            '${data['city'] as String? ?? 'Unknown'}, ${data['province'] as String? ?? 'Unknown'}',
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
@@ -358,10 +533,11 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
             ),
 
             // Description
-            if (data['bio'] != null && data['bio'].isNotEmpty) ...[
+            if (data['bio'] != null &&
+                (data['bio'] as String?)?.isNotEmpty == true) ...[
               const SizedBox(height: 12),
               Text(
-                data['bio'],
+                data['bio'] as String? ?? '',
                 style: const TextStyle(fontSize: 14, color: Colors.black87),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -393,7 +569,7 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
         phone: data['phone'] ?? '',
         status: data['status'] ?? AppConstants.verifiedStatus,
         specialization: data['specialization'] ?? 'General Law',
-        experience: data['experience'] ?? 0,
+        experience: data['experience'] as String? ?? '0',
         barCouncilNumber: data['barCouncilNumber'] ?? 'BC-2023-000',
         rating: (data['rating'] ?? 0.0).toDouble(),
         bio: data['bio'] ?? '',
@@ -418,6 +594,48 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  Color _getSpecializationColor(String? specialization) {
+    switch (specialization) {
+      case 'Tax Law':
+        return Colors.blue;
+      case 'Criminal Law':
+        return Colors.red;
+      case 'Family Law':
+        return Colors.green;
+      case 'Corporate Law':
+        return Colors.purple;
+      case 'Property Law':
+        return Colors.orange;
+      case 'Immigration Law':
+        return Colors.teal;
+      case 'Labor Law':
+        return Colors.indigo;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getSpecializationIcon(String? specialization) {
+    switch (specialization) {
+      case 'Tax Law':
+        return Icons.account_balance;
+      case 'Criminal Law':
+        return Icons.gavel;
+      case 'Family Law':
+        return Icons.family_restroom;
+      case 'Corporate Law':
+        return Icons.business;
+      case 'Property Law':
+        return Icons.home;
+      case 'Immigration Law':
+        return Icons.flight_takeoff;
+      case 'Labor Law':
+        return Icons.work;
+      default:
+        return Icons.category;
     }
   }
 }

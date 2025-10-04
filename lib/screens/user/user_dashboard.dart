@@ -15,6 +15,7 @@ import '../profile/user_profile_screen.dart';
 import 'simple_booking_screen.dart';
 import 'lawyer_list_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
+import '../demo/system_demo_screen.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -85,6 +86,16 @@ class _UserDashboardState extends State<UserDashboard> {
       ),
       centerTitle: true,
       actions: [
+        // Demo Button
+        IconButton(
+          icon: const Icon(Icons.info, color: Color(0xFF8B4513)),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SystemDemoScreen()),
+            );
+          },
+        ),
         _currentUserId != null
             ? StreamBuilder<DocumentSnapshot>(
                 stream: _firestore
@@ -143,16 +154,13 @@ class _UserDashboardState extends State<UserDashboard> {
                         child: CircleAvatar(
                           radius: 22, // Slightly larger for better visibility
                           backgroundColor: const Color(0xFF8B4513),
-                          backgroundImage:
-                              profileImageUrl != null &&
-                                  profileImageUrl.isNotEmpty
-                              ? NetworkImage(profileImageUrl)
+                          backgroundImage: profileImageUrl?.isNotEmpty == true
+                              ? NetworkImage(profileImageUrl!)
                               : null, // No image if no profile image
                           onBackgroundImageError: (exception, stackTrace) {
                             print('❌ Error loading profile image: $exception');
                           },
-                          child:
-                              profileImageUrl == null || profileImageUrl.isEmpty
+                          child: profileImageUrl?.isNotEmpty != true
                               ? const Icon(
                                   Icons.person,
                                   color: Colors.white,
@@ -468,13 +476,10 @@ class _UserDashboardState extends State<UserDashboard> {
                                       0.2,
                                     ),
                                     backgroundImage:
-                                        profileImageUrl != null &&
-                                            profileImageUrl.isNotEmpty
-                                        ? NetworkImage(profileImageUrl)
+                                        profileImageUrl?.isNotEmpty == true
+                                        ? NetworkImage(profileImageUrl!)
                                         : null,
-                                    child:
-                                        profileImageUrl == null ||
-                                            profileImageUrl.isEmpty
+                                    child: profileImageUrl?.isNotEmpty != true
                                         ? Icon(
                                             Icons.person,
                                             color: Colors.white,

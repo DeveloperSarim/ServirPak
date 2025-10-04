@@ -145,6 +145,12 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          print('🔍 LawyerConsultationsScreen: No data or empty docs');
+          print('🔍 LawyerConsultationsScreen: Has data: ${snapshot.hasData}');
+          print(
+            '🔍 LawyerConsultationsScreen: Docs count: ${snapshot.data?.docs.length ?? 0}',
+          );
+
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -161,6 +167,24 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
                   'Your consultations will appear here',
                   style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    print(
+                      '🔍 Debug: Checking all consultations in database...',
+                    );
+                    _debugAllConsultations();
+                  },
+                  child: const Text('Debug: Check All Consultations'),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    print('🔍 Debug: Creating test consultation...');
+                    _createTestConsultation();
+                  },
+                  child: const Text('Debug: Create Test Consultation'),
+                ),
               ],
             ),
           );
@@ -169,6 +193,15 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
         List<ConsultationModel> consultations = snapshot.data!.docs.map((doc) {
           return ConsultationModel.fromFirestore(doc);
         }).toList();
+
+        print(
+          '🔍 LawyerConsultationsScreen: Found ${consultations.length} consultations',
+        );
+        for (var consultation in consultations) {
+          print(
+            '🔍 LawyerConsultationsScreen: Consultation - ${consultation.category} (${consultation.status})',
+          );
+        }
 
         List<ConsultationModel> filteredConsultations = consultations;
         if (_selectedFilter != 'All') {
@@ -215,14 +248,113 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
       final session = await AuthService.getSavedUserSession();
       String lawyerId = session['userId'] as String;
 
+      print(
+        '🔍 LawyerConsultationsScreen: Getting consultations for lawyer ID: $lawyerId',
+      );
+      print('🔍 LawyerConsultationsScreen: Session data: $session');
+
       yield* _firestore
           .collection(AppConstants.consultationsCollection)
           .where('lawyerId', isEqualTo: lawyerId)
           .orderBy('createdAt', descending: true)
           .snapshots();
     } catch (e) {
-      print('Error getting consultations stream: $e');
+      print('❌ Error getting consultations stream: $e');
       yield* Stream.empty();
+    }
+  }
+
+  Future<void> _debugAllConsultations() async {
+    try {
+      print('🔍 Debug: Checking all consultations in database...');
+
+      // Get all consultations
+      QuerySnapshot allSnapshot = await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .get();
+
+      print(
+        '🔍 Debug: Total consultations in database: ${allSnapshot.docs.length}',
+      );
+
+      for (var doc in allSnapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        print('🔍 Debug: Consultation ID: ${doc.id}');
+        print('🔍 Debug: Lawyer ID: ${data['lawyerId']}');
+        print('🔍 Debug: User ID: ${data['userId']}');
+        print('🔍 Debug: Category: ${data['category']}');
+        print('🔍 Debug: Status: ${data['status']}');
+        print('🔍 Debug: Created: ${data['createdAt']}');
+        print('---');
+      }
+
+      // Get current lawyer ID
+      final session = await AuthService.getSavedUserSession();
+      String lawyerId = session['userId'] as String;
+      print('🔍 Debug: Current lawyer ID: $lawyerId');
+
+      // Check if any consultations match current lawyer
+      QuerySnapshot lawyerSnapshot = await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .where('lawyerId', isEqualTo: lawyerId)
+          .get();
+
+      print(
+        '🔍 Debug: Consultations for current lawyer: ${lawyerSnapshot.docs.length}',
+      );
+
+      if (lawyerSnapshot.docs.isNotEmpty) {
+        for (var doc in lawyerSnapshot.docs) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          print('🔍 Debug: Found consultation for lawyer: ${doc.id}');
+          print('🔍 Debug: Data: $data');
+        }
+      }
+    } catch (e) {
+      print('❌ Debug error: $e');
+    }
+  }
+
+  Future<void> _createTestConsultation() async {
+    try {
+      print('🔍 Debug: Creating test consultation...');
+
+      final session = await AuthService.getSavedUserSession();
+      String lawyerId = session['userId'] as String;
+
+      print('🔍 Debug: Creating consultation for lawyer ID: $lawyerId');
+
+      // Create a test consultation
+      await _firestore.collection(AppConstants.consultationsCollection).add({
+        'userId': 'test_user_${DateTime.now().millisecondsSinceEpoch}',
+        'lawyerId': lawyerId,
+        'type': 'free',
+        'category': 'Test Law',
+        'city': 'Karachi',
+        'description':
+            'Test consultation created from lawyer consultation screen',
+        'price': 0.0,
+        'status': 'pending',
+        'scheduledAt': DateTime.now().add(const Duration(days: 1)),
+        'createdAt': DateTime.now(),
+      });
+
+      print('✅ Debug: Test consultation created successfully!');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Test consultation created! Check if it appears now.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('❌ Debug: Error creating test consultation: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create test consultation: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -687,40 +819,6 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Debug error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _createTestConsultation() async {
-    try {
-      final session = await AuthService.getSavedUserSession();
-      String lawyerId = session['userId'] as String;
-
-      // Create a test consultation
-      await ConsultationService.createConsultation(
-        userId: 'test_user_123',
-        lawyerId: lawyerId,
-        type: 'free',
-        category: 'Family Law',
-        city: 'Karachi',
-        description: 'Test consultation for debugging purposes',
-        price: 0.0,
-        scheduledAt: DateTime.now().add(const Duration(days: 1)),
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Test consultation created successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      print('❌ Test consultation error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to create test consultation: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );

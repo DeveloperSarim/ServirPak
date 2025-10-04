@@ -17,6 +17,8 @@ import 'lawyer_consultations_screen.dart';
 import '../../utils/firebase_setup_helper.dart';
 import '../../utils/responsive_helper.dart';
 import '../../services/demo_data_service.dart';
+import '../demo/system_demo_screen.dart';
+import '../debug/debug_consultations_screen.dart';
 
 class LawyerDashboard extends StatefulWidget {
   const LawyerDashboard({super.key});
@@ -29,7 +31,7 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
   int _selectedIndex = 0;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   LawyerModel? _currentLawyer;
-  List<ConsultationModel> _consultations = [];
+  // Removed static _consultations list - now using StreamBuilder for real-time updates
   bool _isLoading = true;
 
   @override
@@ -82,19 +84,7 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             .set(_currentLawyer!.toFirestore());
       }
 
-      // Get consultations
-      _consultations = await ConsultationService.getConsultationsByLawyerId(
-        userId,
-      );
-
-      // If no consultations exist, add demo data automatically
-      if (_consultations.isEmpty) {
-        await DemoDataService.addAllDemoData(userId);
-        // Reload consultations after adding demo data
-        _consultations = await ConsultationService.getConsultationsByLawyerId(
-          userId,
-        );
-      }
+      // Consultations are now loaded via StreamBuilder for real-time updates
     } catch (e) {
       print('Error loading lawyer data: $e');
     } finally {
@@ -176,6 +166,30 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
         ),
         centerTitle: true,
         actions: [
+          // Debug Button
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DebugConsultationsScreen(),
+                ),
+              );
+            },
+          ),
+          // Demo Button
+          IconButton(
+            icon: const Icon(Icons.info),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SystemDemoScreen(),
+                ),
+              );
+            },
+          ),
           // Profile Image
           StreamBuilder<DocumentSnapshot>(
             stream: _firestore
@@ -263,14 +277,10 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             child: CircleAvatar(
               radius: 20,
               backgroundColor: const Color(0xFF8B4513),
-              backgroundImage:
-                  _currentLawyer?.profileImage != null &&
-                      _currentLawyer!.profileImage!.isNotEmpty
+              backgroundImage: _currentLawyer?.profileImage?.isNotEmpty == true
                   ? NetworkImage(_currentLawyer!.profileImage!)
                   : null,
-              child:
-                  _currentLawyer?.profileImage == null ||
-                      _currentLawyer!.profileImage!.isEmpty
+              child: _currentLawyer?.profileImage?.isNotEmpty != true
                   ? const Icon(Icons.person, color: Colors.white, size: 24)
                   : null,
             ),
@@ -489,67 +499,81 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
   }
 
   Widget _buildStatsCards() {
-    int totalCases = _consultations.length;
-    int activeCases = _consultations
-        .where(
-          (c) =>
-              c.status == AppConstants.pendingStatus || c.status == 'accepted',
-        )
-        .length;
-    int completedCases = _consultations
-        .where((c) => c.status == AppConstants.completedStatus)
-        .length;
-    double totalRevenue = _consultations
-        .where((c) => c.status == AppConstants.completedStatus)
-        .fold(0.0, (sum, c) => sum + c.price);
+    return StreamBuilder<QuerySnapshot>(
+      stream: _getConsultationsStream(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Practice Statistics',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: ResponsiveHelper.isMobile(context) ? 2 : 4,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.2,
+        List<ConsultationModel> consultations = snapshot.data!.docs.map((doc) {
+          return ConsultationModel.fromFirestore(doc);
+        }).toList();
+
+        int totalCases = consultations.length;
+        int activeCases = consultations
+            .where(
+              (c) =>
+                  c.status == AppConstants.pendingStatus ||
+                  c.status == 'accepted',
+            )
+            .length;
+        int completedCases = consultations
+            .where((c) => c.status == AppConstants.completedStatus)
+            .length;
+        double totalRevenue = consultations
+            .where((c) => c.status == AppConstants.completedStatus)
+            .fold(0.0, (sum, c) => sum + c.price);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStatCard(
-              'Total Cases',
-              totalCases.toString(),
-              Icons.folder,
-              const Color(0xFF8B4513),
+            const Text(
+              'Practice Statistics',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-            _buildStatCard(
-              'Active Cases',
-              activeCases.toString(),
-              Icons.work,
-              const Color(0xFFA0522D),
-            ),
-            _buildStatCard(
-              'Completed',
-              completedCases.toString(),
-              Icons.check_circle,
-              const Color(0xFF2E8B57),
-            ),
-            _buildStatCard(
-              'Revenue',
-              'PKR ${totalRevenue.toStringAsFixed(0)}',
-              Icons.attach_money,
-              const Color(0xFFD4AF37),
+            const SizedBox(height: 16),
+            GridView.count(
+              crossAxisCount: ResponsiveHelper.isMobile(context) ? 2 : 4,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.2,
+              children: [
+                _buildStatCard(
+                  'Total Cases',
+                  totalCases.toString(),
+                  Icons.folder,
+                  const Color(0xFF8B4513),
+                ),
+                _buildStatCard(
+                  'Active Cases',
+                  activeCases.toString(),
+                  Icons.work,
+                  const Color(0xFFA0522D),
+                ),
+                _buildStatCard(
+                  'Completed',
+                  completedCases.toString(),
+                  Icons.check_circle,
+                  const Color(0xFF2E8B57),
+                ),
+                _buildStatCard(
+                  'Revenue',
+                  'PKR ${totalRevenue.toStringAsFixed(0)}',
+                  Icons.attach_money,
+                  const Color(0xFFD4AF37),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -774,8 +798,21 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
               ),
             ],
           ),
-          child: _consultations.isEmpty
-              ? const Center(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _getConsultationsStream(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              List<ConsultationModel> consultations = snapshot.data!.docs.map((
+                doc,
+              ) {
+                return ConsultationModel.fromFirestore(doc);
+              }).toList();
+
+              if (consultations.isEmpty) {
+                return const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20),
                     child: Column(
@@ -793,18 +830,22 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
                       ],
                     ),
                   ),
-                )
-              : Column(
-                  children: _consultations.take(5).map((consultation) {
-                    return Column(
-                      children: [
-                        _buildConsultationItem(consultation),
-                        if (consultation != _consultations.take(5).last)
-                          const Divider(),
-                      ],
-                    );
-                  }).toList(),
-                ),
+                );
+              }
+
+              return Column(
+                children: consultations.take(5).map((consultation) {
+                  return Column(
+                    children: [
+                      _buildConsultationItem(consultation),
+                      if (consultation != consultations.take(5).last)
+                        const Divider(),
+                    ],
+                  );
+                }).toList(),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -1008,13 +1049,18 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
       final session = await AuthService.getSavedUserSession();
       String lawyerId = session['userId'] as String;
 
+      print(
+        '🔍 LawyerDashboard: Getting consultations for lawyer ID: $lawyerId',
+      );
+      print('🔍 LawyerDashboard: Session data: $session');
+
       yield* _firestore
           .collection(AppConstants.consultationsCollection)
           .where('lawyerId', isEqualTo: lawyerId)
           .orderBy('createdAt', descending: true)
           .snapshots();
     } catch (e) {
-      print('Error getting consultations stream: $e');
+      print('❌ Error getting consultations stream: $e');
       yield* Stream.empty();
     }
   }
@@ -1024,13 +1070,17 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
       final session = await AuthService.getSavedUserSession();
       String lawyerId = session['userId'] as String;
 
+      print(
+        '🔍 LawyerDashboard: Getting pending consultations for lawyer ID: $lawyerId',
+      );
+
       yield* _firestore
           .collection(AppConstants.consultationsCollection)
           .where('lawyerId', isEqualTo: lawyerId)
           .where('status', isEqualTo: AppConstants.pendingStatus)
           .snapshots();
     } catch (e) {
-      print('Error getting pending consultations stream: $e');
+      print('❌ Error getting pending consultations stream: $e');
       yield* Stream.empty();
     }
   }
@@ -1052,8 +1102,21 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: _consultations.isEmpty
-          ? const Center(
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _getConsultationsStream(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          List<ConsultationModel> consultations = snapshot.data!.docs.map((
+            doc,
+          ) {
+            return ConsultationModel.fromFirestore(doc);
+          }).toList();
+
+          if (consultations.isEmpty) {
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1069,18 +1132,22 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
                   ),
                 ],
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _consultations.length,
-              itemBuilder: (context, index) {
-                ConsultationModel consultation = _consultations[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: _buildConsultationItem(consultation),
-                );
-              },
-            ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: consultations.length,
+            itemBuilder: (context, index) {
+              ConsultationModel consultation = consultations[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: _buildConsultationItem(consultation),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -1135,20 +1202,35 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: ListView.builder(
-                  itemCount: _consultations.length,
-                  itemBuilder: (context, index) {
-                    ConsultationModel consultation = _consultations[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        title: Text(consultation.category),
-                        subtitle: Text(consultation.description),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.note_add),
-                          onPressed: () => _addCaseNote(consultation),
-                        ),
-                      ),
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _getConsultationsStream(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    List<ConsultationModel> consultations = snapshot.data!.docs
+                        .map((doc) {
+                          return ConsultationModel.fromFirestore(doc);
+                        })
+                        .toList();
+
+                    return ListView.builder(
+                      itemCount: consultations.length,
+                      itemBuilder: (context, index) {
+                        ConsultationModel consultation = consultations[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            title: Text(consultation.category),
+                            subtitle: Text(consultation.description),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.note_add),
+                              onPressed: () => _addCaseNote(consultation),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -1167,102 +1249,119 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
   }
 
   void _showBillingDialog() {
-    double totalRevenue = _consultations
-        .where((c) => c.status == AppConstants.completedStatus)
-        .fold(0.0, (sum, c) => sum + c.price);
-
-    int completedCases = _consultations
-        .where((c) => c.status == AppConstants.completedStatus)
-        .length;
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Billing Summary'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8B4513).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Total Revenue',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'PKR ${totalRevenue.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF8B4513),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+      builder: (context) => StreamBuilder<QuerySnapshot>(
+        stream: _getConsultationsStream(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const AlertDialog(
+              content: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          List<ConsultationModel> consultations = snapshot.data!.docs.map((
+            doc,
+          ) {
+            return ConsultationModel.fromFirestore(doc);
+          }).toList();
+
+          double totalRevenue = consultations
+              .where((c) => c.status == AppConstants.completedStatus)
+              .fold(0.0, (sum, c) => sum + c.price);
+
+          int completedCases = consultations
+              .where((c) => c.status == AppConstants.completedStatus)
+              .length;
+
+          return AlertDialog(
+            title: const Text('Billing Summary'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Column(
-                    children: [
-                      Text(
-                        completedCases.toString(),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B4513).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Total Revenue',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
-                      ),
-                      const Text('Completed Cases'),
-                    ],
+                        const SizedBox(height: 8),
+                        Text(
+                          'PKR ${totalRevenue.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF8B4513),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  Column(
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Text(
-                        _consultations.length.toString(),
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
+                      Column(
+                        children: [
+                          Text(
+                            completedCases.toString(),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                          const Text('Completed Cases'),
+                        ],
                       ),
-                      const Text('Total Cases'),
+                      Column(
+                        children: [
+                          Text(
+                            consultations.length.toString(),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          const Text('Total Cases'),
+                        ],
+                      ),
                     ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _navigateToAnalytics();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8B4513),
-              foregroundColor: Colors.white,
             ),
-            child: const Text('View Analytics'),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _navigateToAnalytics();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF8B4513),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('View Analytics'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
