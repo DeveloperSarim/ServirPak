@@ -12,7 +12,6 @@ import '../auth/login_screen.dart';
 // import '../consultation/consultation_booking_screen.dart';
 import 'user_chat_list_screen.dart';
 import '../profile/user_profile_screen.dart';
-import '../settings/settings_screen.dart';
 import '../consultation/consultation_booking_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
 
@@ -331,19 +330,6 @@ class _UserDashboardState extends State<UserDashboard> {
             },
           ),
           const Divider(),
-          ListTile(
-            leading: const Icon(Icons.settings, color: Color(0xFF8B4513)),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(userRole: 'user'),
-                ),
-              );
-            },
-          ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout'),

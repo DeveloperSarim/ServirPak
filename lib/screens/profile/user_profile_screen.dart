@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import '../../services/auth_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_model.dart';
-import '../settings/settings_screen.dart';
+import '../auth/login_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -21,11 +22,55 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ImagePicker _picker = ImagePicker();
   UserModel? _currentUser;
+  bool _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _isDarkMode = prefs.getBool('isDarkMode') ?? false;
+      });
+    } catch (e) {
+      print('Error loading theme preference: $e');
+    }
+  }
+
+  Future<void> _toggleTheme() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _isDarkMode = !_isDarkMode;
+      });
+      await prefs.setBool('isDarkMode', _isDarkMode);
+    } catch (e) {
+      print('Error saving theme preference: $e');
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await AuthService.signOut();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logout failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -68,19 +113,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Color(0xFF8B4513)),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(userRole: 'user'),
-                ),
-              );
-            },
-          ),
-        ],
+        actions: [],
       ),
       body: _currentUser == null
           ? const Center(child: CircularProgressIndicator())
@@ -92,8 +125,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   _buildProfileStats(),
                   const SizedBox(height: 20),
                   _buildProfileOptions(),
-                  const SizedBox(height: 20),
-                  _buildSeedDataSection(),
                 ],
               ),
             ),
@@ -298,8 +329,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           _buildOptionTile('Help & Support', Icons.help, () {
             _showHelpSupport();
           }),
-          _buildOptionTile('About ServirPak', Icons.info, () {
-            _showAboutDialog();
+          _buildOptionTile(
+            'Dark Mode',
+            _isDarkMode ? Icons.dark_mode : Icons.light_mode,
+            () {
+              _toggleTheme();
+            },
+          ),
+          _buildOptionTile('Logout', Icons.logout, () {
+            _showLogoutDialog();
           }),
         ],
       ),
@@ -336,53 +374,29 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  Widget _buildSeedDataSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _logout();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Developer Options',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF8B4513),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _seedDemoData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8B4513),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                minimumSize: const Size(double.infinity, 48),
-              ),
-              child: const Text('Seed Demo Data'),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'This will add sample lawyers, consultations, and chat data to Firebase for testing purposes.',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
+            child: const Text('Logout'),
+          ),
+        ],
       ),
     );
   }
@@ -647,7 +661,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Camera se image select nahi kar sakte: $e')),
+        SnackBar(content: Text('Cannot select image from camera: $e')),
       );
     }
   }
@@ -673,7 +687,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gallery se image select nahi kar sakte: $e')),
+        SnackBar(content: Text('Cannot select image from gallery: $e')),
       );
     }
   }
@@ -781,11 +795,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Profile update error: $e')));
     }
-  }
-
-  void _updateProfile(String name, String phone) async {
-    // Keep old method for backward compatibility
-    _updateUserProfile(name, phone, _currentUser?.profileImage);
   }
 
   void _updateUserProfile(
@@ -1012,182 +1021,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         return Colors.red;
       default:
         return Colors.grey;
-    }
-  }
-
-  void _showAboutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('About ServirPak'),
-        content: const Text(
-          'ServirPak is a comprehensive legal services platform that connects users with qualified lawyers and legal consultants across Pakistan.\n\nVersion: 1.0.0\nBuild: 2024',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _seedDemoData() async {
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Seeding demo data...'),
-            ],
-          ),
-        ),
-      );
-
-      // Seed demo lawyers
-      await _seedDemoLawyers();
-
-      // Seed demo consultations
-      await _seedDemoConsultations();
-
-      // Seed demo chat messages
-      await _seedDemoChats();
-
-      // Close loading dialog
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Demo data seeded successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      // Close loading dialog
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-
-      // Show error message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error seeding data: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _seedDemoLawyers() async {
-    final lawyers = [
-      {
-        'name': 'Ahmed Ali Khan',
-        'email': 'ahmed.khan@servirpak.com',
-        'phone': '+92-300-1234567',
-        'specialization': 'Criminal Law',
-        'experience': '8 years',
-        'rating': 4.8,
-        'city': 'Lahore',
-        'status': AppConstants.verifiedStatus,
-        'bio': 'Experienced criminal defense lawyer with 8+ years of practice.',
-        'createdAt': Timestamp.now(),
-      },
-      {
-        'name': 'Fatima Sheikh',
-        'email': 'fatima.sheikh@servirpak.com',
-        'phone': '+92-300-2345678',
-        'specialization': 'Family Law',
-        'experience': '6 years',
-        'rating': 4.9,
-        'city': 'Karachi',
-        'status': AppConstants.verifiedStatus,
-        'bio': 'Specialized in family law and divorce cases.',
-        'createdAt': Timestamp.now(),
-      },
-      {
-        'name': 'Muhammad Hassan',
-        'email': 'm.hassan@servirpak.com',
-        'phone': '+92-300-3456789',
-        'specialization': 'Property Law',
-        'experience': '10 years',
-        'rating': 4.7,
-        'city': 'Islamabad',
-        'status': AppConstants.verifiedStatus,
-        'bio': 'Property law expert with extensive experience in real estate.',
-        'createdAt': Timestamp.now(),
-      },
-    ];
-
-    for (var lawyer in lawyers) {
-      await _firestore.collection(AppConstants.lawyersCollection).add(lawyer);
-    }
-  }
-
-  Future<void> _seedDemoConsultations() async {
-    final consultations = [
-      {
-        'userId': AuthService.currentUser?.uid ?? '',
-        'lawyerId': 'demo_lawyer_1',
-        'type': 'Criminal Defense',
-        'status': AppConstants.pendingStatus,
-        'description': 'Need legal advice for a criminal case',
-        'createdAt': Timestamp.now(),
-      },
-      {
-        'userId': AuthService.currentUser?.uid ?? '',
-        'lawyerId': 'demo_lawyer_2',
-        'type': 'Family Law',
-        'status': AppConstants.confirmedStatus,
-        'description': 'Divorce consultation needed',
-        'createdAt': Timestamp.now(),
-      },
-    ];
-
-    for (var consultation in consultations) {
-      await _firestore
-          .collection(AppConstants.consultationsCollection)
-          .add(consultation);
-    }
-  }
-
-  Future<void> _seedDemoChats() async {
-    final chats = [
-      {
-        'conversationId': 'demo_conversation_1',
-        'senderId': AuthService.currentUser?.uid ?? '',
-        'receiverId': 'demo_lawyer_1',
-        'message': 'Hello, I need legal advice for my case.',
-        'timestamp': Timestamp.now(),
-        'participants': [AuthService.currentUser?.uid ?? '', 'demo_lawyer_1'],
-      },
-      {
-        'conversationId': 'demo_conversation_1',
-        'senderId': 'demo_lawyer_1',
-        'receiverId': AuthService.currentUser?.uid ?? '',
-        'message':
-            'Hello! I would be happy to help you. Can you tell me more about your case?',
-        'timestamp': Timestamp.now(),
-        'participants': [AuthService.currentUser?.uid ?? '', 'demo_lawyer_1'],
-      },
-    ];
-
-    for (var chat in chats) {
-      await _firestore
-          .collection(AppConstants.chatMessagesCollection)
-          .add(chat);
     }
   }
 }
