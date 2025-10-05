@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/lawyer_model.dart';
 import '../constants/app_constants.dart';
@@ -11,7 +10,11 @@ class LawyerService {
     try {
       QuerySnapshot snapshot = await _firestore
           .collection(AppConstants.lawyersCollection)
-          .where('status', isEqualTo: AppConstants.verifiedStatus)
+          .where(
+            'status',
+            whereIn: [AppConstants.verifiedStatus, AppConstants.pendingStatus],
+          )
+          .orderBy('status')
           .orderBy('name')
           .get();
 
@@ -49,8 +52,13 @@ class LawyerService {
     try {
       QuerySnapshot snapshot = await _firestore
           .collection(AppConstants.lawyersCollection)
-          .where('status', isEqualTo: AppConstants.verifiedStatus)
+          .where(
+            'status',
+            whereIn: [AppConstants.verifiedStatus, AppConstants.pendingStatus],
+          )
           .where('specialization', isEqualTo: specialization)
+          .orderBy('status')
+          .orderBy('name')
           .get();
 
       return snapshot.docs

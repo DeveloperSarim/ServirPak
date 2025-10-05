@@ -10,6 +10,7 @@ import '../../services/lawyer_service.dart';
 import '../../services/review_service.dart';
 import '../../services/user_seed_service.dart';
 import '../../constants/app_constants.dart';
+import '../../services/lawyer_management_service.dart';
 import '../auth/login_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -1225,6 +1226,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
           subtitle: 'Configure platform security',
           onTap: () => _showSecuritySettingsDialog(),
         ),
+        _buildListTile(
+          icon: Icons.refresh,
+          title: 'Replace All Lawyers',
+          subtitle: 'Clear existing lawyers and add new ones with passwords',
+          onTap: () => _showReplaceLawyersDialog(),
+          textColor: Colors.blue,
+        ),
       ],
     );
   }
@@ -1938,6 +1946,125 @@ class _AdminDashboardState extends State<AdminDashboard> {
         // Handle permission change
       },
     );
+  }
+
+  void _showReplaceLawyersDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Replace All Lawyers'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This action will:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Delete all existing lawyers and users'),
+            Text('• Create 8 new lawyers with passwords'),
+            Text('• All new lawyers will be verified'),
+            SizedBox(height: 16),
+            Text(
+              'New Lawyer Credentials:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('ahmed.khan@servipak.com - lawyer123'),
+            Text('fatima.sheikh@servipak.com - lawyer123'),
+            Text('muhammad.hassan@servipak.com - lawyer123'),
+            Text('sara.ahmed@servipak.com - lawyer123'),
+            Text('omar.sheikh@servipak.com - lawyer123'),
+            Text('aisha.malik@servipak.com - lawyer123'),
+            Text('hassan.ali@servipak.com - lawyer123'),
+            Text('zainab.khan@servipak.com - lawyer123'),
+            SizedBox(height: 16),
+            Text(
+              '⚠️ This action cannot be undone!',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _replaceAllLawyers();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Replace Lawyers'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _replaceAllLawyers() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Replacing lawyers...'),
+            ],
+          ),
+        ),
+      );
+
+      await LawyerManagementService.replaceAllLawyers();
+
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Show success dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Success!'),
+          content: const Text(
+            'All lawyers have been replaced successfully!\n\n'
+            '8 new lawyers have been created with the passwords provided.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Show error dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('Failed to replace lawyers: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   void _showSecuritySettingsDialog() {

@@ -214,9 +214,13 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
   }
 
   Stream<QuerySnapshot> _getLawyersStream() {
+    // Show both verified and pending lawyers, but prioritize verified ones
     Query query = _firestore
         .collection(AppConstants.lawyersCollection)
-        .where('status', isEqualTo: AppConstants.verifiedStatus);
+        .where(
+          'status',
+          whereIn: [AppConstants.verifiedStatus, AppConstants.pendingStatus],
+        );
 
     if (_selectedCategory != 'All') {
       query = query.where('specialization', isEqualTo: _selectedCategory);
@@ -291,12 +295,40 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        data['specialization'] ?? 'General Law',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            data['specialization'] ?? 'General Law',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  data['status'] == AppConstants.verifiedStatus
+                                  ? Colors.green
+                                  : Colors.orange,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              data['status'] == AppConstants.verifiedStatus
+                                  ? 'Verified'
+                                  : 'Pending',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       Row(
