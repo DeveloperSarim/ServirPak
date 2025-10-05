@@ -15,6 +15,7 @@ import '../../utils/firebase_setup_helper.dart';
 import '../../utils/responsive_helper.dart';
 import '../../services/demo_data_service.dart';
 import 'lawyer_profile_management_screen.dart';
+import 'lawyer_profile_completion_screen.dart';
 
 class LawyerDashboard extends StatefulWidget {
   const LawyerDashboard({super.key});
@@ -188,16 +189,27 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
                   child: CircleAvatar(
                     radius: 18,
                     backgroundColor: const Color(0xFF8B4513),
-                    backgroundImage:
-                        profileImageUrl != null && profileImageUrl.isNotEmpty
-                        ? NetworkImage(profileImageUrl)
-                        : null,
-                    onBackgroundImageError: (exception, stackTrace) {
-                      print('❌ Error loading lawyer profile image: $exception');
-                    },
-                    child: profileImageUrl == null || profileImageUrl.isEmpty
-                        ? const Icon(Icons.gavel, color: Colors.white, size: 18)
-                        : null,
+                    child: profileImageUrl != null && profileImageUrl.isNotEmpty
+                        ? ClipOval(
+                            child: Image.network(
+                              profileImageUrl,
+                              width: 36,
+                              height: 36,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.gavel,
+                                  color: Colors.white,
+                                  size: 18,
+                                );
+                              },
+                            ),
+                          )
+                        : const Icon(
+                            Icons.gavel,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                   ),
                 );
               }

@@ -89,9 +89,15 @@ class CloudinaryService {
   }) async {
     try {
       print('🚀 Starting simple image upload...');
+      print('🚀 File type: ${file.runtimeType}');
+      print('🚀 Folder: $folder');
+      print('🚀 Public ID: $publicId');
+      print('🚀 Base URL: $_baseUrl');
 
       final String finalPublicId =
           publicId ?? '${folder}_${DateTime.now().millisecondsSinceEpoch}';
+
+      print('🚀 Final Public ID: $finalPublicId');
 
       var request = http.MultipartRequest(
         'POST',
@@ -100,6 +106,7 @@ class CloudinaryService {
 
       // Add file
       if (kIsWeb) {
+        print('🚀 Adding file for web (Uint8List)');
         request.files.add(
           http.MultipartFile.fromBytes(
             'file',
@@ -108,6 +115,7 @@ class CloudinaryService {
           ),
         );
       } else {
+        print('🚀 Adding file for mobile (File)');
         request.files.add(
           await http.MultipartFile.fromPath(
             'file',
@@ -121,7 +129,11 @@ class CloudinaryService {
       request.fields['upload_preset'] = CloudinaryConfig.unsignedPreset;
       request.fields['public_id'] = finalPublicId;
 
+      print('🚀 Upload preset: ${CloudinaryConfig.unsignedPreset}');
+      print('🚀 Fields: ${request.fields}');
+      print('🚀 Files count: ${request.files.length}');
       print('🚀 Sending simple request...');
+
       var response = await request.send();
       print('🚀 Response status: ${response.statusCode}');
 

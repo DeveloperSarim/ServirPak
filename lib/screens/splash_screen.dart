@@ -4,6 +4,7 @@ import '../constants/app_constants.dart';
 import 'onboarding_screen.dart';
 import 'auth/login_screen.dart';
 import 'home/home_screen.dart';
+import 'lawyer/lawyer_profile_completion_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -67,10 +68,32 @@ class _SplashScreenState extends State<SplashScreen>
         var session = await AuthService.getSavedUserSession();
 
         if (session['userId'] != null && AuthService.currentUser != null) {
-          // User is logged in, navigate to home
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
+          // User is logged in, check if lawyer needs to complete profile
+          String userRole = session['role'] ?? '';
+          if (userRole == AppConstants.lawyerRole) {
+            bool isProfileCompleted =
+                await AuthService.isLawyerProfileCompleted(
+                  session['userId'] ?? '',
+                );
+            if (!isProfileCompleted) {
+              // Lawyer needs to complete profile
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const LawyerProfileCompletionScreen(),
+                ),
+              );
+            } else {
+              // Lawyer profile completed, navigate to home
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
+            }
+          } else {
+            // Regular user, navigate to home
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          }
         } else {
           // User is not logged in, navigate to login
           Navigator.of(context).pushReplacement(

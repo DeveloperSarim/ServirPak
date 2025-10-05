@@ -220,6 +220,25 @@ class AuthService {
     }
   }
 
+  // Check if lawyer profile is completed
+  static Future<bool> isLawyerProfileCompleted(String userId) async {
+    try {
+      DocumentSnapshot doc = await _firestore
+          .collection(AppConstants.lawyersCollection)
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return data['profileCompleted'] == true;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Error checking profile completion: $e');
+      return false;
+    }
+  }
+
   // Get lawyer by user ID
   static Future<LawyerModel?> getLawyerByUserId(String userId) async {
     try {

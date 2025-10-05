@@ -46,6 +46,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
   File? _barCouncilCertificate;
   File? _degreeCertificate;
   File? _profileImage;
+  Uint8List? _profileImageBytes; // For web compatibility
 
   // Upload progress
   Map<String, bool> _uploadProgress = {};
@@ -86,6 +87,19 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
         setState(() {
           _profileImage = File(image.path);
         });
+
+        // For web, we need to read bytes immediately
+        if (kIsWeb) {
+          try {
+            final bytes = await image.readAsBytes();
+            setState(() {
+              _profileImageBytes = bytes;
+            });
+          } catch (e) {
+            print('❌ Error reading image bytes on web: $e');
+            _showErrorSnackBar('Error reading image: $e');
+          }
+        }
       }
     } catch (e) {
       _showErrorSnackBar('Error picking image: $e');
@@ -430,12 +444,9 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(60),
                               child: kIsWeb
-                                  ? FutureBuilder<Uint8List>(
-                                      future: _profileImage!.readAsBytes(),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.hasData) {
-                                          return Image.memory(
-                                            snapshot.data!,
+                                  ? _profileImageBytes != null
+                                        ? Image.memory(
+                                            _profileImageBytes!,
                                             fit: BoxFit.cover,
                                             errorBuilder:
                                                 (context, error, stackTrace) =>
@@ -443,16 +454,8 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                                                       Icons.person,
                                                       size: 60,
                                                     ),
-                                          );
-                                        } else if (snapshot.hasError) {
-                                          return const Icon(
-                                            Icons.person,
-                                            size: 60,
-                                          );
-                                        }
-                                        return const CircularProgressIndicator();
-                                      },
-                                    )
+                                          )
+                                        : const Icon(Icons.person, size: 60)
                                   : Image.file(
                                       _profileImage!,
                                       fit: BoxFit.cover,
