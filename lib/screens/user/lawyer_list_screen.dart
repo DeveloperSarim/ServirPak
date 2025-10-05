@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../models/lawyer_model.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../constants/app_constants.dart';
-import 'simple_booking_screen.dart';
+import 'lawyer_booking_screen.dart';
+import '../lawyer/lawyer_details_screen.dart';
 
 class LawyerListScreen extends StatefulWidget {
   const LawyerListScreen({super.key});
@@ -395,26 +395,58 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(30),
-                    child:
-                        (data['profileImage'] as String?) != null &&
-                            (data['profileImage'] as String?)?.isNotEmpty ==
-                                true
-                        ? Image.network(
-                            data['profileImage'] as String? ?? '',
+                    child: FutureBuilder<String?>(
+                      future: _getLawyerProfileImage(lawyerId, data),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF8B4513),
+                            ),
+                          );
+                        }
+
+                        final profileImage = snapshot.data;
+                        print(
+                          '🔍 LawyerListScreen: Lawyer ${data['name']} - ProfileImage: $profileImage',
+                        );
+
+                        if (profileImage != null && profileImage.isNotEmpty) {
+                          return Image.network(
+                            profileImage,
                             fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF8B4513),
+                                ),
+                              );
+                            },
                             errorBuilder: (context, error, stackTrace) {
+                              print(
+                                '❌ LawyerListScreen: Error loading image for ${data['name']}: $error',
+                              );
                               return const Icon(
                                 Icons.person,
                                 size: 30,
                                 color: Color(0xFF8B4513),
                               );
                             },
-                          )
-                        : const Icon(
+                          );
+                        } else {
+                          print(
+                            '⚠️ LawyerListScreen: No profile image for ${data['name']}',
+                          );
+                          return const Icon(
                             Icons.person,
                             size: 30,
                             color: Color(0xFF8B4513),
-                          ),
+                          );
+                        }
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -476,26 +508,6 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                     ],
                   ),
                 ),
-
-                // Book Button
-                ElevatedButton(
-                  onPressed: () => _bookLawyer(lawyerId, data),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B4513),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  child: const Text(
-                    'Book Now',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                  ),
-                ),
               ],
             ),
 
@@ -510,10 +522,105 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
+
+            // Action Buttons
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _viewLawyerDetails(lawyerId, data),
+                    icon: const Icon(Icons.info_outline, size: 16),
+                    label: const Text('View Details'),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF8B4513)),
+                      foregroundColor: const Color(0xFF8B4513),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _bookLawyer(lawyerId, data),
+                    icon: const Icon(Icons.book_online, size: 16),
+                    label: const Text('Book Now'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B4513),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _viewLawyerDetails(
+    String lawyerId,
+    Map<String, dynamic> data,
+  ) async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            LawyerDetailsScreen(lawyerId: lawyerId, lawyerData: data),
+      ),
+    );
+  }
+
+  Future<String?> _getLawyerProfileImage(
+    String lawyerId,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      // First check if profileImage exists in lawyers collection
+      String? profileImage = data['profileImage'] as String?;
+
+      if (profileImage != null && profileImage.isNotEmpty) {
+        print(
+          '✅ LawyerListScreen: Found profile image in lawyers collection: $profileImage',
+        );
+        return profileImage;
+      }
+
+      // If not found, check users collection
+      print(
+        '🔄 LawyerListScreen: Checking users collection for lawyer: $lawyerId',
+      );
+      DocumentSnapshot userDoc = await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(lawyerId)
+          .get();
+
+      if (userDoc.exists) {
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        String? userProfileImage = userData['profileImage'] as String?;
+
+        if (userProfileImage != null && userProfileImage.isNotEmpty) {
+          print(
+            '✅ LawyerListScreen: Found profile image in users collection: $userProfileImage',
+          );
+          return userProfileImage;
+        }
+      }
+
+      print(
+        '⚠️ LawyerListScreen: No profile image found for lawyer: $lawyerId',
+      );
+      return null;
+    } catch (e) {
+      print('❌ LawyerListScreen: Error fetching profile image: $e');
+      return null;
+    }
   }
 
   Future<void> _bookLawyer(String lawyerId, Map<String, dynamic> data) async {
@@ -527,82 +634,13 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
       return;
     }
 
-    try {
-      LawyerModel lawyerModel = LawyerModel(
-        id: lawyerId,
-        userId: data['userId'] ?? lawyerId,
-        name: data['name'] ?? 'Unknown Lawyer',
-        email: data['email'] ?? '',
-        phone: data['phone'] ?? '',
-        status: data['status'] ?? AppConstants.verifiedStatus,
-        specialization: data['specialization'] ?? 'General Law',
-        experience: data['experience'] as String? ?? '0',
-        barCouncilNumber: data['barCouncilNumber'] ?? 'BC-2023-000',
-        rating: (data['rating'] ?? 0.0).toDouble(),
-        bio: data['bio'] ?? '',
-        profileImage: data['profileImage'],
-        address: data['address'] ?? '',
-        city: data['city'] ?? 'Unknown',
-        province: data['province'] ?? 'Unknown',
-        createdAt: DateTime.now(),
-      );
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              SimpleBookingScreen(lawyer: lawyerModel, user: _currentUser),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error booking lawyer: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Color _getSpecializationColor(String? specialization) {
-    switch (specialization) {
-      case 'Tax Law':
-        return Colors.blue;
-      case 'Criminal Law':
-        return Colors.red;
-      case 'Family Law':
-        return Colors.green;
-      case 'Corporate Law':
-        return Colors.purple;
-      case 'Property Law':
-        return Colors.orange;
-      case 'Immigration Law':
-        return Colors.teal;
-      case 'Labor Law':
-        return Colors.indigo;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getSpecializationIcon(String? specialization) {
-    switch (specialization) {
-      case 'Tax Law':
-        return Icons.account_balance;
-      case 'Criminal Law':
-        return Icons.gavel;
-      case 'Family Law':
-        return Icons.family_restroom;
-      case 'Corporate Law':
-        return Icons.business;
-      case 'Property Law':
-        return Icons.home;
-      case 'Immigration Law':
-        return Icons.flight_takeoff;
-      case 'Labor Law':
-        return Icons.work;
-      default:
-        return Icons.category;
-    }
+    // Navigate to booking screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            LawyerBookingScreen(lawyerId: lawyerId, lawyerData: data),
+      ),
+    );
   }
 }

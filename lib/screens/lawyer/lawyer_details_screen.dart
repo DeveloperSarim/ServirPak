@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/lawyer_model.dart';
 import '../../models/review_model.dart';
 import '../../services/review_service.dart';
+import '../../constants/app_constants.dart';
 
 class LawyerDetailsScreen extends StatefulWidget {
-  final LawyerModel lawyer;
+  final LawyerModel? lawyer;
+  final String? lawyerId;
+  final Map<String, dynamic>? lawyerData;
 
-  const LawyerDetailsScreen({super.key, required this.lawyer});
+  const LawyerDetailsScreen({
+    super.key,
+    this.lawyer,
+    this.lawyerId,
+    this.lawyerData,
+  });
 
   @override
   State<LawyerDetailsScreen> createState() => _LawyerDetailsScreenState();
@@ -18,12 +27,116 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
   List<ReviewModel> _reviews = [];
   bool _isLoadingReviews = true;
   final ReviewService _reviewService = ReviewService();
+  LawyerModel? _currentLawyer;
+  int _consultationCount = 0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _initializeLawyer();
     _loadReviews();
+    _loadConsultationCount();
+  }
+
+  void _initializeLawyer() {
+    if (widget.lawyer != null) {
+      _currentLawyer = widget.lawyer;
+      print('🔍 LawyerDetailsScreen: Using provided lawyer model');
+    } else if (widget.lawyerData != null) {
+      // Check if profileImage exists in lawyers collection first
+      String? profileImage = widget.lawyerData!['profileImage'] as String?;
+
+      if (profileImage == null || profileImage.isEmpty) {
+        print(
+          '🔄 LawyerDetailsScreen: No profile image in lawyers collection, will check users collection later',
+        );
+      } else {
+        print(
+          '✅ LawyerDetailsScreen: Found profile image in lawyers collection: $profileImage',
+        );
+      }
+
+      // Create LawyerModel from lawyerData
+      _currentLawyer = LawyerModel(
+        id: widget.lawyerId ?? 'unknown',
+        userId: widget.lawyerData!['userId'] as String? ?? 'unknown',
+        email: widget.lawyerData!['email'] as String? ?? 'lawyer@servipak.com',
+        name: widget.lawyerData!['name'] as String? ?? 'Unknown Lawyer',
+        phone: widget.lawyerData!['phone'] as String? ?? '+92-300-0000000',
+        status: widget.lawyerData!['status'] as String? ?? 'verified',
+        specialization:
+            widget.lawyerData!['specialization'] as String? ??
+            'General Practice',
+        experience: widget.lawyerData!['experience'] as String? ?? '0 years',
+        barCouncilNumber:
+            widget.lawyerData!['barCouncilNumber'] as String? ?? 'BC-2023-000',
+        bio: widget.lawyerData!['bio'] as String? ?? 'Experienced lawyer',
+        rating: (widget.lawyerData!['rating'] as num?)?.toDouble() ?? 0.0,
+        totalCases: widget.lawyerData!['totalCases'] as int? ?? 0,
+        languages: widget.lawyerData!['languages'] is List
+            ? List<String>.from(widget.lawyerData!['languages'])
+            : widget.lawyerData!['languages'] is String
+            ? [widget.lawyerData!['languages'] as String]
+            : ['Urdu', 'English'],
+        address:
+            widget.lawyerData!['address'] as String? ?? 'Address not provided',
+        city: widget.lawyerData!['city'] as String? ?? 'Unknown',
+        province: widget.lawyerData!['province'] as String? ?? 'Unknown',
+        profileImage: profileImage,
+        education: widget.lawyerData!['education'] as String?,
+        officeAddress: widget.lawyerData!['officeAddress'] as String?,
+        officeHours: widget.lawyerData!['officeHours'] as String?,
+        consultationFee: widget.lawyerData!['consultationFee'] as String?,
+        certifications: widget.lawyerData!['certifications'] as String?,
+        awards: widget.lawyerData!['awards'] as String?,
+        createdAt: DateTime.now(),
+      );
+
+      // If no profile image, try to fetch from users collection
+      if (profileImage == null || profileImage.isEmpty) {
+        _fetchProfileImageFromUsers();
+      }
+    }
+  }
+
+  Future<void> _fetchProfileImageFromUsers() async {
+    try {
+      if (_currentLawyer != null && widget.lawyerId != null) {
+        print(
+          '🔄 LawyerDetailsScreen: Checking users collection for lawyer: ${widget.lawyerId}',
+        );
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection(AppConstants.usersCollection)
+            .doc(widget.lawyerId!)
+            .get();
+
+        if (userDoc.exists) {
+          Map<String, dynamic> userData =
+              userDoc.data() as Map<String, dynamic>;
+          String? userProfileImage = userData['profileImage'] as String?;
+
+          if (userProfileImage != null && userProfileImage.isNotEmpty) {
+            print(
+              '✅ LawyerDetailsScreen: Found profile image in users collection: $userProfileImage',
+            );
+            setState(() {
+              _currentLawyer = _currentLawyer!.copyWith(
+                profileImage: userProfileImage,
+              );
+            });
+          } else {
+            print(
+              '⚠️ LawyerDetailsScreen: No profile image found in users collection',
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print(
+        '❌ LawyerDetailsScreen: Error fetching profile image from users: $e',
+      );
+    }
   }
 
   @override
@@ -35,15 +148,57 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
   Future<void> _loadReviews() async {
     try {
       setState(() => _isLoadingReviews = true);
-      final reviews = await _reviewService.getLawyerReviews(widget.lawyer.id);
-      setState(() {
-        _reviews = reviews;
-        _isLoadingReviews = false;
-      });
+      if (_currentLawyer != null) {
+        final reviews = await _reviewService.getLawyerReviews(
+          _currentLawyer!.id,
+        );
+        setState(() {
+          _reviews = reviews;
+          _isLoadingReviews = false;
+        });
+      } else {
+        setState(() => _isLoadingReviews = false);
+      }
     } catch (e) {
       setState(() => _isLoadingReviews = false);
       print('Error loading reviews: $e');
     }
+  }
+
+  Future<void> _loadConsultationCount() async {
+    try {
+      if (_currentLawyer != null) {
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection(AppConstants.consultationsCollection)
+            .where('lawyerId', isEqualTo: _currentLawyer!.id)
+            .get();
+
+        setState(() {
+          _consultationCount = querySnapshot.docs.length;
+        });
+
+        print(
+          '🔍 LawyerDetailsScreen: Loaded ${_consultationCount} consultations for ${_currentLawyer!.name}',
+        );
+      }
+    } catch (e) {
+      print('❌ Error loading consultation count: $e');
+    }
+  }
+
+  ImageProvider? _getProfileImage() {
+    if (_currentLawyer?.profileImage != null &&
+        _currentLawyer!.profileImage!.isNotEmpty) {
+      print(
+        '🔍 LawyerDetailsScreen: Using profile image: ${_currentLawyer!.profileImage}',
+      );
+      return NetworkImage(_currentLawyer!.profileImage!);
+    }
+
+    print(
+      '⚠️ LawyerDetailsScreen: No profile image available for ${_currentLawyer?.name}',
+    );
+    return null;
   }
 
   @override
@@ -126,10 +281,8 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    backgroundImage: widget.lawyer.profileImage != null
-                        ? NetworkImage(widget.lawyer.profileImage!)
-                        : null,
-                    child: widget.lawyer.profileImage == null
+                    backgroundImage: _getProfileImage(),
+                    child: _getProfileImage() == null
                         ? const Icon(
                             Icons.gavel,
                             size: 50,
@@ -147,7 +300,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.lawyer.name,
+                        _currentLawyer?.name ?? 'Unknown Lawyer',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -156,7 +309,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        widget.lawyer.specialization,
+                        _currentLawyer?.specialization ?? 'General Practice',
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 16,
@@ -201,7 +354,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
                 Expanded(
                   child: _buildStatCard(
                     'Experience',
-                    widget.lawyer.experience,
+                    _currentLawyer?.experience ?? '0 years',
                     Icons.work,
                   ),
                 ),
@@ -217,7 +370,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
                 Expanded(
                   child: _buildStatCard(
                     'Consultations',
-                    '${_calculateTotalConsultations()}',
+                    '$_consultationCount',
                     Icons.handshake,
                   ),
                 ),
@@ -284,7 +437,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
         children: [
           _buildSectionCard(
             'Professional Summary',
-            widget.lawyer.bio ?? 'No bio available yet.',
+            _currentLawyer?.bio ?? 'No bio available yet.',
             Icons.description,
           ),
 
@@ -292,7 +445,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
           _buildSectionCard(
             'Specializations',
-            widget.lawyer.specialization,
+            _currentLawyer?.specialization ?? 'General Practice',
             Icons.gavel,
           ),
 
@@ -300,7 +453,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
           _buildSectionCard(
             'Languages',
-            'English, Urdu${widget.lawyer.languages?.isNotEmpty == true ? ', ${widget.lawyer.languages!.join(', ')}' : ''}',
+            'English, Urdu${_currentLawyer?.languages?.isNotEmpty == true ? ', ${_currentLawyer!.languages!.join(', ')}' : ''}',
             Icons.language,
           ),
 
@@ -308,7 +461,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
           _buildSectionCard(
             'Office Location',
-            widget.lawyer.officeAddress ?? 'Not specified',
+            _currentLawyer?.address ?? 'Not specified',
             Icons.location_on,
           ),
 
@@ -316,7 +469,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
           _buildSectionCard(
             'Consultation Fee',
-            'PKR ${widget.lawyer.consultationFee ?? 'Contact for rates'}',
+            'PKR ${_currentLawyer?.consultationFee ?? 'Contact for rates'}',
             Icons.payments,
           ),
         ],
@@ -436,7 +589,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
         children: [
           _buildSectionCard(
             'Education',
-            widget.lawyer.education ?? 'Educational background not specified',
+            _currentLawyer?.education ?? 'Educational background not specified',
             Icons.school,
           ),
 
@@ -444,7 +597,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
           _buildSectionCard(
             'Bar Council Number',
-            widget.lawyer.barCouncilNumber,
+            _currentLawyer?.barCouncilNumber ?? 'Not specified',
             Icons.badge,
           ),
 
@@ -452,8 +605,13 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
           _buildSectionCard(
             'Certifications',
-            widget.lawyer.certifications?.isNotEmpty == true
-                ? widget.lawyer.certifications!
+            _currentLawyer?.certifications is List
+                ? (_currentLawyer!.certifications as List<String>?)?.join(
+                        ', ',
+                      ) ??
+                      'No certifications'
+                : _currentLawyer?.certifications is String
+                ? _currentLawyer!.certifications as String
                 : 'No certifications available',
             Icons.verified,
           ),
@@ -462,8 +620,11 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
           _buildSectionCard(
             'Awards & Recognition',
-            widget.lawyer.awards?.isNotEmpty == true
-                ? widget.lawyer.awards!
+            _currentLawyer?.awards is List
+                ? (_currentLawyer!.awards as List<String>?)?.join(', ') ??
+                      'No awards'
+                : _currentLawyer?.awards is String
+                ? _currentLawyer!.awards as String
                 : 'No awards listed yet',
             Icons.workspace_premium,
           ),
@@ -480,7 +641,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
         children: [
           _buildContactCard(
             'Phone Number',
-            widget.lawyer.phone,
+            _currentLawyer?.phone ?? 'Not provided',
             Icons.phone,
             Colors.green,
           ),
@@ -489,7 +650,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
           _buildContactCard(
             'Email Address',
-            widget.lawyer.email,
+            _currentLawyer?.email ?? 'Not provided',
             Icons.email,
             Colors.blue,
           ),
@@ -498,7 +659,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
           _buildContactCard(
             'Office Address',
-            widget.lawyer.officeAddress ?? 'Not specified',
+            _currentLawyer?.address ?? 'Not specified',
             Icons.location_on,
             Colors.red,
           ),
@@ -526,8 +687,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    widget.lawyer.officeHours ??
-                        'Available 24/7 for urgent consultations',
+                    _currentLawyer?.officeHours ?? 'Office hours not specified',
                     style: const TextStyle(fontSize: 14),
                   ),
                 ],
@@ -554,7 +714,9 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
           if (title == 'Phone Number') {
             // Make phone call
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Calling ${widget.lawyer.name}...')),
+              SnackBar(
+                content: Text('Calling ${_currentLawyer?.name ?? 'lawyer'}...'),
+              ),
             );
           } else if (title == 'Email Address') {
             // Send email
@@ -613,7 +775,9 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
         // Navigate to consultation booking
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Booking consultation with ${widget.lawyer.name}...'),
+            content: Text(
+              'Booking consultation with ${_currentLawyer?.name ?? 'lawyer'}...',
+            ),
           ),
         );
       },
@@ -647,10 +811,6 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
     return ((successfulConsultations / _reviews.length) * 100)
         .round()
         .toString();
-  }
-
-  String _calculateTotalConsultations() {
-    return _reviews.length.toString();
   }
 
   String _formatDate(DateTime date) {

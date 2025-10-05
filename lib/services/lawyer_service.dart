@@ -8,6 +8,7 @@ class LawyerService {
   // Get all verified lawyers
   Future<List<LawyerModel>> getVerifiedLawyers() async {
     try {
+      print('🔍 LawyerService: Fetching verified lawyers...');
       QuerySnapshot snapshot = await _firestore
           .collection(AppConstants.lawyersCollection)
           .where(
@@ -18,11 +19,104 @@ class LawyerService {
           .orderBy('name')
           .get();
 
-      return snapshot.docs
-          .map((doc) => LawyerModel.fromFirestore(doc))
-          .toList();
+      print('🔍 LawyerService: Found ${snapshot.docs.length} lawyers');
+
+      List<LawyerModel> lawyers = [];
+      for (var doc in snapshot.docs) {
+        try {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          print(
+            '🔍 LawyerService: Lawyer ${data['name']} - ProfileImage: ${data['profileImage']}',
+          );
+
+          // Check if profileImage is null, try to get from users collection
+          if (data['profileImage'] == null ||
+              data['profileImage'].toString().isEmpty) {
+            print(
+              '🔄 LawyerService: No profile image in lawyers collection, checking users collection...',
+            );
+            try {
+              DocumentSnapshot userDoc = await _firestore
+                  .collection(AppConstants.usersCollection)
+                  .doc(doc.id)
+                  .get();
+
+              if (userDoc.exists) {
+                Map<String, dynamic> userData =
+                    userDoc.data() as Map<String, dynamic>;
+                String? userProfileImage = userData['profileImage'] as String?;
+                print(
+                  '🔍 LawyerService: User profile image: $userProfileImage',
+                );
+
+                if (userProfileImage != null && userProfileImage.isNotEmpty) {
+                  data['profileImage'] = userProfileImage;
+                  print(
+                    '✅ LawyerService: Using profile image from users collection',
+                  );
+                }
+              }
+            } catch (e) {
+              print('❌ LawyerService: Error checking users collection: $e');
+            }
+          }
+
+          // Create LawyerModel with updated data
+          lawyers.add(
+            LawyerModel(
+              id: doc.id,
+              userId: data['userId'] ?? '',
+              email: data['email'] ?? '',
+              name: data['name'] ?? '',
+              phone: data['phone'] ?? '',
+              specialization: data['specialization'] ?? '',
+              experience: data['experience'] ?? '',
+              barCouncilNumber: data['barCouncilNumber'] ?? '',
+              status: data['status'] ?? 'pending',
+              createdAt: (data['createdAt'] as Timestamp).toDate(),
+              updatedAt: data['updatedAt'] != null
+                  ? (data['updatedAt'] as Timestamp).toDate()
+                  : null,
+              kycDocuments: List<String>.from(data['kycDocuments'] ?? []),
+              documentUrls: Map<String, String>.from(
+                data['documentUrls'] ?? {},
+              ),
+              profileImage: data['profileImage'],
+              bio: data['bio'],
+              rating: data['rating']?.toDouble(),
+              totalCases: data['totalCases'],
+              languages: data['languages'] is List
+                  ? List<String>.from(data['languages'])
+                  : data['languages'] is String
+                  ? [data['languages'] as String]
+                  : null,
+              address: data['address'],
+              city: data['city'],
+              province: data['province'],
+              education: data['education'],
+              officeAddress: data['officeAddress'],
+              officeHours: data['officeHours'],
+              consultationFee: data['consultationFee'],
+              certifications: data['certifications'] is List
+                  ? (data['certifications'] as List<String>?)?.join(', ')
+                  : data['certifications'] is String
+                  ? data['certifications'] as String
+                  : null,
+              awards: data['awards'] is List
+                  ? (data['awards'] as List<String>?)?.join(', ')
+                  : data['awards'] is String
+                  ? data['awards'] as String
+                  : null,
+            ),
+          );
+        } catch (e) {
+          print('❌ LawyerService: Error processing lawyer ${doc.id}: $e');
+        }
+      }
+
+      return lawyers;
     } catch (e) {
-      print('Error getting verified lawyers: $e');
+      print('❌ Error getting verified lawyers: $e');
       return [];
     }
   }

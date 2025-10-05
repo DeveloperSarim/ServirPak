@@ -81,6 +81,69 @@ class CloudinaryService {
     return null;
   }
 
+  // Simple image upload without complex parameters
+  static Future<String?> uploadImageSimple({
+    required dynamic file,
+    required String folder,
+    String? publicId,
+  }) async {
+    try {
+      print('🚀 Starting simple image upload...');
+
+      final String finalPublicId =
+          publicId ?? '${folder}_${DateTime.now().millisecondsSinceEpoch}';
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/image/upload'),
+      );
+
+      // Add file
+      if (kIsWeb) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            file as Uint8List,
+            filename: 'image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          ),
+        );
+      } else {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'file',
+            (file as File).path,
+            filename: 'image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          ),
+        );
+      }
+
+      // Simple fields - no complex parameters
+      request.fields['upload_preset'] = CloudinaryConfig.unsignedPreset;
+      request.fields['public_id'] = finalPublicId;
+
+      print('🚀 Sending simple request...');
+      var response = await request.send();
+      print('🚀 Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        var responseData = await response.stream.bytesToString();
+        print('🚀 Response: $responseData');
+        var jsonData = json.decode(responseData);
+
+        if (jsonData['secure_url'] != null) {
+          print('✅ Simple upload successful: ${jsonData['secure_url']}');
+          return jsonData['secure_url'];
+        }
+      } else {
+        var errorBody = await response.stream.bytesToString();
+        print('❌ Simple upload failed: ${response.statusCode} - $errorBody');
+      }
+    } catch (e) {
+      print('❌ Simple upload error: $e');
+    }
+    return null;
+  }
+
   // Image upload for Web Compatible
   static Future<String?> uploadImage({
     required dynamic file, // File for mobile, Uint8List for web
@@ -114,10 +177,14 @@ class CloudinaryService {
         );
       } else {
         // For mobile, use File
+        print('📱 Mobile platform detected');
+        print('📱 File path: ${file.path}');
+        print('📱 File exists: ${await file.exists()}');
+
         request.files.add(
           await http.MultipartFile.fromPath(
             'file',
-            (file as File).path,
+            file.path,
             filename: originalFileName ?? file.path.split('/').last,
           ),
         );
@@ -136,18 +203,33 @@ class CloudinaryService {
 
       request.fields.addAll(fields);
 
+      // Send request
+      print('🚀 Sending request to Cloudinary...');
+      print('🚀 URL: $_baseUrl/image/upload');
+      print('🚀 Upload preset: ${CloudinaryConfig.uploadPreset}');
+      print('🚀 Folder: $folder');
+      print('🚀 Public ID: $finalPublicId');
+
       var response = await request.send();
+      print('🚀 Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         var responseData = await response.stream.bytesToString();
+        print('🚀 Response body: $responseData');
         var jsonData = json.decode(responseData);
 
         if (jsonData['secure_url'] != null) {
           print('✅ Image uploaded successfully: ${jsonData['secure_url']}');
           return jsonData['secure_url'];
+        } else {
+          print('❌ No secure_url in response');
+          return null;
         }
       } else {
+        var errorBody = await response.stream.bytesToString();
         print('❌ Image upload failed with status: ${response.statusCode}');
+        print('❌ Error body: $errorBody');
+        throw Exception('Upload failed: ${response.statusCode} - $errorBody');
       }
     } catch (e) {
       print('❌ Error uploading image: $e');

@@ -15,7 +15,7 @@ import '../profile/user_profile_screen.dart';
 import 'simple_booking_screen.dart';
 import 'lawyer_list_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
-import '../demo/system_demo_screen.dart';
+import 'working_booking_demo.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -92,7 +92,9 @@ class _UserDashboardState extends State<UserDashboard> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const SystemDemoScreen()),
+              MaterialPageRoute(
+                builder: (context) => const WorkingBookingDemo(),
+              ),
             );
           },
         ),
@@ -991,10 +993,50 @@ class _UserDashboardState extends State<UserDashboard> {
                   color: const Color(0xFF8B4513).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.person,
-                  size: 40,
-                  color: Color(0xFF8B4513),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Builder(
+                    builder: (context) {
+                      final profileImage = data['profileImage'] as String?;
+                      print(
+                        '🔍 UserDashboard: Lawyer ${data['name']} - ProfileImage: $profileImage',
+                      );
+
+                      if (profileImage != null && profileImage.isNotEmpty) {
+                        return Image.network(
+                          profileImage,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF8B4513),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            print(
+                              '❌ UserDashboard: Error loading image for ${data['name']}: $error',
+                            );
+                            return const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Color(0xFF8B4513),
+                            );
+                          },
+                        );
+                      } else {
+                        print(
+                          '⚠️ UserDashboard: No profile image for ${data['name']}',
+                        );
+                        return const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Color(0xFF8B4513),
+                        );
+                      }
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -1018,78 +1060,120 @@ class _UserDashboardState extends State<UserDashboard> {
                 overflow: TextOverflow.ellipsis,
               ),
               const Spacer(),
-              // Book Now Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    // Create lawyer model from Firestore data
-                    LawyerModel lawyerModel = LawyerModel(
-                      id: data['id'] as String? ?? 'lawyer_$index',
-                      userId: data['userId'] as String? ?? 'lawyer_$index',
-                      email: data['email'] as String? ?? 'lawyer@servipak.com',
-                      name: data['name'] as String? ?? 'Unknown Lawyer',
-                      phone: data['phone'] as String? ?? '+92-300-0000000',
-                      status:
-                          data['status'] as String? ??
-                          AppConstants.verifiedStatus,
-                      specialization:
-                          data['specialization'] as String? ??
-                          'General Practice',
-                      experience: data['experience'] as String? ?? '0 years',
-                      barCouncilNumber:
-                          data['barCouncilNumber'] as String? ?? 'BC-2023-000',
-                      bio: data['bio'] as String? ?? 'Experienced lawyer',
-                      rating: data['rating'] as double? ?? 0.0,
-                      totalCases: data['totalCases'] as int? ?? 0,
-                      languages: List<String>.from(
-                        data['languages'] as List? ?? ['Urdu', 'English'],
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => _viewLawyerDetails(data, index),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF8B4513)),
+                        foregroundColor: const Color(0xFF8B4513),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
-                      address:
-                          data['address'] as String? ?? 'Address not provided',
-                      city: data['city'] as String? ?? 'Unknown',
-                      province: data['province'] as String? ?? 'Unknown',
-                      createdAt: DateTime.now(),
-                    );
-
-                    // Get current user
-                    UserModel? currentUser = await _getCurrentUser();
-
-                    if (currentUser != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SimpleBookingScreen(
-                            lawyer: lawyerModel,
-                            user: currentUser,
-                          ),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please login to book consultation'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B4513),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      child: const Text(
+                        'Details',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
-                  child: const Text(
-                    'Book Now',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        // Create lawyer model from Firestore data
+                        LawyerModel lawyerModel = LawyerModel(
+                          id: data['id'] as String? ?? 'lawyer_$index',
+                          userId: data['userId'] as String? ?? 'lawyer_$index',
+                          email:
+                              data['email'] as String? ?? 'lawyer@servipak.com',
+                          name: data['name'] as String? ?? 'Unknown Lawyer',
+                          phone: data['phone'] as String? ?? '+92-300-0000000',
+                          status:
+                              data['status'] as String? ??
+                              AppConstants.verifiedStatus,
+                          specialization:
+                              data['specialization'] as String? ??
+                              'General Practice',
+                          experience:
+                              data['experience'] as String? ?? '0 years',
+                          barCouncilNumber:
+                              data['barCouncilNumber'] as String? ??
+                              'BC-2023-000',
+                          bio: data['bio'] as String? ?? 'Experienced lawyer',
+                          rating: data['rating'] as double? ?? 0.0,
+                          totalCases: data['totalCases'] as int? ?? 0,
+                          languages: List<String>.from(
+                            data['languages'] as List? ?? ['Urdu', 'English'],
+                          ),
+                          address:
+                              data['address'] as String? ??
+                              'Address not provided',
+                          city: data['city'] as String? ?? 'Unknown',
+                          province: data['province'] as String? ?? 'Unknown',
+                          createdAt: DateTime.now(),
+                        );
+
+                        // Get current user
+                        UserModel? currentUser = await _getCurrentUser();
+
+                        if (currentUser != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SimpleBookingScreen(
+                                lawyer: lawyerModel,
+                                user: currentUser,
+                              ),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Please login to book consultation',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B4513),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      child: const Text(
+                        'Book',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _viewLawyerDetails(Map<String, dynamic> data, int index) async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LawyerDetailsScreen(
+          lawyerId: data['id'] as String? ?? 'lawyer_$index',
+          lawyerData: data,
         ),
       ),
     );
@@ -2164,9 +2248,15 @@ class _UserDashboardState extends State<UserDashboard> {
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
             ),
-            itemCount: 12,
+            itemCount: 13,
             itemBuilder: (context, index) {
               final categories = [
+                {
+                  'name': 'Test Booking',
+                  'icon': Icons.science,
+                  'color': Colors.purple,
+                  'isTest': true,
+                },
                 {
                   'name': 'Administrative Law',
                   'icon': Icons.gavel,
@@ -2233,7 +2323,17 @@ class _UserDashboardState extends State<UserDashboard> {
               return InkWell(
                 onTap: () {
                   Navigator.pop(context);
-                  _searchCategoryLawyers(category['name'] as String);
+                  if (category['isTest'] == true) {
+                    // Navigate to test screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WorkingBookingDemo(),
+                      ),
+                    );
+                  } else {
+                    _searchCategoryLawyers(category['name'] as String);
+                  }
                 },
                 child: Container(
                   decoration: BoxDecoration(

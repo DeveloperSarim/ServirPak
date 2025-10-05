@@ -78,12 +78,14 @@ class LawyerModel {
           : null,
       kycDocuments: List<String>.from(data['kycDocuments'] ?? []),
       documentUrls: Map<String, String>.from(data['documentUrls'] ?? {}),
-      profileImage: data['profileImage'],
+      profileImage: data['profileImage'] ?? '',
       bio: data['bio'],
       rating: data['rating']?.toDouble(),
       totalCases: data['totalCases'],
-      languages: data['languages'] != null
+      languages: data['languages'] is List
           ? List<String>.from(data['languages'])
+          : data['languages'] is String
+          ? [data['languages'] as String]
           : null,
       address: data['address'],
       city: data['city'],
@@ -92,8 +94,16 @@ class LawyerModel {
       officeAddress: data['officeAddress'],
       officeHours: data['officeHours'],
       consultationFee: data['consultationFee'],
-      certifications: data['certifications'],
-      awards: data['awards'],
+      certifications: data['certifications'] is List
+          ? (data['certifications'] as List<String>?)?.join(', ')
+          : data['certifications'] is String
+          ? data['certifications'] as String
+          : null,
+      awards: data['awards'] is List
+          ? (data['awards'] as List<String>?)?.join(', ')
+          : data['awards'] is String
+          ? data['awards'] as String
+          : null,
     );
   }
 

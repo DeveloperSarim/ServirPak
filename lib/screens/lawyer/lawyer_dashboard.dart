@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
-import '../../services/consultation_service.dart';
 import '../../constants/app_constants.dart';
-import '../../models/user_model.dart';
 import '../../models/lawyer_model.dart';
 import '../../models/consultation_model.dart';
 import '../auth/login_screen.dart';
-import '../settings/settings_screen.dart';
 import 'lawyer_analytics_screen.dart';
 import 'lawyer_documents_screen.dart';
 import 'lawyer_schedule_screen.dart';
@@ -17,8 +14,7 @@ import 'lawyer_consultations_screen.dart';
 import '../../utils/firebase_setup_helper.dart';
 import '../../utils/responsive_helper.dart';
 import '../../services/demo_data_service.dart';
-import '../demo/system_demo_screen.dart';
-import '../debug/debug_consultations_screen.dart';
+import 'lawyer_profile_management_screen.dart';
 
 class LawyerDashboard extends StatefulWidget {
   const LawyerDashboard({super.key});
@@ -112,7 +108,10 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.folder), label: 'My Cases'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.folder),
+            label: 'Consultations',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
           BottomNavigationBarItem(icon: Icon(Icons.upload), label: 'Documents'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
@@ -166,30 +165,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
         ),
         centerTitle: true,
         actions: [
-          // Debug Button
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const DebugConsultationsScreen(),
-                ),
-              );
-            },
-          ),
-          // Demo Button
-          IconButton(
-            icon: const Icon(Icons.info),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SystemDemoScreen(),
-                ),
-              );
-            },
-          ),
           // Profile Image
           StreamBuilder<DocumentSnapshot>(
             stream: _firestore
@@ -855,76 +830,196 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
     Color statusColor = _getStatusColor(consultation.status);
     String timeAgo = _getTimeAgo(consultation.createdAt);
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: statusColor.withOpacity(0.1),
-        child: Icon(_getStatusIcon(consultation.status), color: statusColor),
-      ),
-      title: Text(
-        consultation.category,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            consultation.description,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  consultation.status.toUpperCase(),
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // User Info Section
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
+                  child: FutureBuilder<DocumentSnapshot>(
+                    future: _firestore
+                        .collection(AppConstants.usersCollection)
+                        .doc(consultation.userId)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data!.exists) {
+                        final userData =
+                            snapshot.data!.data() as Map<String, dynamic>?;
+                        final profileImage =
+                            userData?['profileImage'] as String?;
+                        final userName =
+                            userData?['name'] as String? ?? 'Unknown User';
+
+                        return profileImage != null && profileImage.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(20),
+                                child: Image.network(
+                                  profileImage,
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Text(
+                                      userName.isNotEmpty
+                                          ? userName[0].toUpperCase()
+                                          : 'U',
+                                      style: const TextStyle(
+                                        color: Color(0xFF8B4513),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              )
+                            : Text(
+                                userName.isNotEmpty
+                                    ? userName[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                  color: Color(0xFF8B4513),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                      }
+                      return const Text(
+                        'U',
+                        style: TextStyle(
+                          color: Color(0xFF8B4513),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  consultation.type.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.blue,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FutureBuilder<DocumentSnapshot>(
+                        future: _firestore
+                            .collection(AppConstants.usersCollection)
+                            .doc(consultation.userId)
+                            .get(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData && snapshot.data!.exists) {
+                            final userData =
+                                snapshot.data!.data() as Map<String, dynamic>?;
+                            final userName =
+                                userData?['name'] as String? ?? 'Unknown User';
+                            final userEmail =
+                                userData?['email'] as String? ?? 'No email';
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  userName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  userEmail,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                          return const Text(
+                            'Unknown User',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    consultation.status.toUpperCase(),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Consultation Details
+            Text(
+              consultation.category,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Color(0xFF8B4513),
               ),
-              const Spacer(),
-              Text(
-                timeAgo,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ),
-        ],
-      ),
-      trailing: Text(
-        'PKR ${consultation.price.toStringAsFixed(0)}',
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.green,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              consultation.description,
+              style: const TextStyle(fontSize: 14),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+
+            // Bottom Row
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    consultation.type.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  timeAgo,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      onTap: () {
-        _showConsultationDetails(consultation);
-      },
     );
   }
 
@@ -943,21 +1038,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
     }
   }
 
-  IconData _getStatusIcon(String status) {
-    switch (status) {
-      case 'accepted':
-        return Icons.check_circle;
-      case 'pending':
-        return Icons.schedule;
-      case 'completed':
-        return Icons.done_all;
-      case 'cancelled':
-        return Icons.cancel;
-      default:
-        return Icons.help;
-    }
-  }
-
   String _getTimeAgo(DateTime dateTime) {
     Duration difference = DateTime.now().difference(dateTime);
 
@@ -969,78 +1049,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
       return '${difference.inMinutes} minutes ago';
     } else {
       return 'Just now';
-    }
-  }
-
-  void _showConsultationDetails(ConsultationModel consultation) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(consultation.category),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Description: ${consultation.description}'),
-            const SizedBox(height: 8),
-            Text('Type: ${consultation.type}'),
-            const SizedBox(height: 8),
-            Text('Status: ${consultation.status}'),
-            const SizedBox(height: 8),
-            Text('Price: PKR ${consultation.price.toStringAsFixed(0)}'),
-            const SizedBox(height: 8),
-            Text('Scheduled: ${consultation.scheduledAt.toString()}'),
-          ],
-        ),
-        actions: [
-          if (consultation.status == AppConstants.pendingStatus) ...[
-            TextButton(
-              onPressed: () {
-                _updateConsultationStatus(consultation.id, 'accepted');
-                Navigator.pop(context);
-              },
-              child: const Text('Accept'),
-            ),
-            TextButton(
-              onPressed: () {
-                _updateConsultationStatus(consultation.id, 'rejected');
-                Navigator.pop(context);
-              },
-              child: const Text('Reject'),
-            ),
-          ],
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _updateConsultationStatus(
-    String consultationId,
-    String status,
-  ) async {
-    try {
-      await ConsultationService.updateConsultationStatus(
-        consultationId: consultationId,
-        status: status,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Consultation $status successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to update consultation: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
@@ -1090,7 +1098,7 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
-          'My Consultations',
+          'Consultations',
           style: TextStyle(
             color: Color(0xFF8B4513),
             fontSize: 20,
@@ -1152,28 +1160,7 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
   }
 
   Widget _buildProfile() {
-    return FutureBuilder<UserModel?>(
-      future: _getCurrentUser(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return SettingsScreen(
-          userRole: AppConstants.lawyerRole,
-          user: snapshot.data,
-        );
-      },
-    );
-  }
-
-  Future<UserModel?> _getCurrentUser() async {
-    try {
-      final session = await AuthService.getSavedUserSession();
-      return await AuthService.getUserById(session['userId'] as String);
-    } catch (e) {
-      print('❌ Error getting current user: $e');
-      return null;
-    }
+    return const LawyerProfileManagementScreen();
   }
 
   void _navigateToAnalytics() {

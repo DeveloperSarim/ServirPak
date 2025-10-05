@@ -33,6 +33,11 @@ class ConsultationService {
         city: city,
         description: description,
         price: price,
+        platformFee: price * 0.05, // 5% platform fee
+        totalAmount: price + (price * 0.05), // Total amount
+        consultationDate: scheduledAt.toString().split(' ')[0], // Date
+        consultationTime: scheduledAt.toString().split(' ')[1], // Time
+        meetingLink: '', // Will be generated later
         status: AppConstants.pendingStatus,
         scheduledAt: scheduledAt,
         createdAt: DateTime.now(),

@@ -9,6 +9,11 @@ class ConsultationModel {
   final String city;
   final String description;
   final double price;
+  final double platformFee; // 5% platform fee
+  final double totalAmount; // price + platformFee
+  final String consultationDate; // Date of consultation
+  final String consultationTime; // Time of consultation
+  final String meetingLink; // Google Meet/Zoom link
   final String
   status; // 'pending', 'accepted', 'rejected', 'completed', 'cancelled'
   final DateTime scheduledAt;
@@ -27,6 +32,11 @@ class ConsultationModel {
     required this.city,
     required this.description,
     required this.price,
+    required this.platformFee,
+    required this.totalAmount,
+    required this.consultationDate,
+    required this.consultationTime,
+    required this.meetingLink,
     required this.status,
     required this.scheduledAt,
     this.completedAt,
@@ -48,6 +58,11 @@ class ConsultationModel {
       city: data['city'] ?? '',
       description: data['description'] ?? '',
       price: (data['price'] ?? 0.0).toDouble(),
+      platformFee: (data['platformFee'] ?? 0.0).toDouble(),
+      totalAmount: (data['totalAmount'] ?? 0.0).toDouble(),
+      consultationDate: data['consultationDate'] ?? '',
+      consultationTime: data['consultationTime'] ?? '',
+      meetingLink: data['meetingLink'] ?? '',
       status: data['status'] ?? 'pending',
       scheduledAt: (data['scheduledAt'] as Timestamp).toDate(),
       completedAt: data['completedAt'] != null
@@ -71,6 +86,11 @@ class ConsultationModel {
       'city': city,
       'description': description,
       'price': price,
+      'platformFee': platformFee,
+      'totalAmount': totalAmount,
+      'consultationDate': consultationDate,
+      'consultationTime': consultationTime,
+      'meetingLink': meetingLink,
       'status': status,
       'scheduledAt': Timestamp.fromDate(scheduledAt),
       'completedAt': completedAt != null
@@ -92,6 +112,11 @@ class ConsultationModel {
     String? city,
     String? description,
     double? price,
+    double? platformFee,
+    double? totalAmount,
+    String? consultationDate,
+    String? consultationTime,
+    String? meetingLink,
     String? status,
     DateTime? scheduledAt,
     DateTime? completedAt,
@@ -109,6 +134,11 @@ class ConsultationModel {
       city: city ?? this.city,
       description: description ?? this.description,
       price: price ?? this.price,
+      platformFee: platformFee ?? this.platformFee,
+      totalAmount: totalAmount ?? this.totalAmount,
+      consultationDate: consultationDate ?? this.consultationDate,
+      consultationTime: consultationTime ?? this.consultationTime,
+      meetingLink: meetingLink ?? this.meetingLink,
       status: status ?? this.status,
       scheduledAt: scheduledAt ?? this.scheduledAt,
       completedAt: completedAt ?? this.completedAt,

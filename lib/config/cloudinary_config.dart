@@ -11,10 +11,22 @@ class CloudinaryConfig {
   static const String apiSecret = 'yH0uP4MNAUv_scZzCbn5LCt53WM';
 
   // Your upload preset (working preset name)
-  static const String uploadPreset = 'servipak_preset';
+  static const String uploadPreset = 'ml_default';
+
+  // Alternative unsigned preset
+  static const String unsignedPreset = 'ml_default';
 
   // Base URL for Cloudinary API
   static String get baseUrl => 'https://api.cloudinary.com/v1_1/$cloudName';
+
+  // Debug info
+  static void printConfig() {
+    print('🔧 Cloudinary Config:');
+    print('🔧 Cloud Name: $cloudName');
+    print('🔧 API Key: $apiKey');
+    print('🔧 Upload Preset: $uploadPreset');
+    print('🔧 Base URL: $baseUrl');
+  }
 
   // Instructions:
   // 1. Cloudinary account banayein: https://cloudinary.com
