@@ -162,14 +162,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             child: CircleAvatar(
               radius: 50,
               backgroundColor: Colors.white.withOpacity(0.2),
-              backgroundImage: _currentUser?.profileImage != null
+              backgroundImage: _currentUser?.profileImage?.isNotEmpty == true
                   ? NetworkImage(_currentUser!.profileImage!)
                   : null,
-              child: _currentUser?.profileImage != null
+              child: _currentUser?.profileImage?.isNotEmpty == true
                   ? null
                   : Text(
-                      _currentUser?.name.isNotEmpty == true
-                          ? _currentUser!.name[0].toUpperCase()
+                      (_currentUser?.name?.isNotEmpty == true)
+                          ? (_currentUser!.name[0]).toUpperCase()
                           : 'U',
                       style: const TextStyle(
                         fontSize: 36,
