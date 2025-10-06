@@ -411,157 +411,126 @@ class _UserDashboardState extends State<UserDashboard> {
               ),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Stack(
-              children: [
-                // Background Image Placeholder
-                Positioned(
-                  right: 12,
-                  top: 16,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                // Content
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Dynamic profile greeting with real user data
+                  Row(
                     children: [
-                      // Dynamic profile greeting with real user data
-                      Row(
-                        children: [
-                          // Real user profile image from Cloudinary
-                          StreamBuilder<DocumentSnapshot>(
-                            stream: _firestore
-                                .collection(AppConstants.usersCollection)
-                                .doc(_currentUserId ?? '')
-                                .snapshots(),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData && snapshot.data!.exists) {
-                                final userData =
-                                    snapshot.data!.data()
-                                        as Map<String, dynamic>?;
-                                final profileImageUrl =
-                                    userData?['profileImage'] as String?;
+                      // Real user profile image from Cloudinary
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: _firestore
+                            .collection(AppConstants.usersCollection)
+                            .doc(_currentUserId ?? '')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData && snapshot.data!.exists) {
+                            final userData =
+                                snapshot.data!.data() as Map<String, dynamic>?;
+                            final profileImageUrl =
+                                userData?['profileImage'] as String?;
 
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: CircleAvatar(
-                                    radius: 15,
-                                    backgroundColor: Colors.white.withOpacity(
-                                      0.2,
-                                    ),
-                                    backgroundImage:
-                                        profileImageUrl?.isNotEmpty == true
-                                        ? NetworkImage(profileImageUrl!)
-                                        : null,
-                                    child: profileImageUrl?.isNotEmpty != true
-                                        ? Icon(
-                                            Icons.person,
-                                            color: Colors.white,
-                                            size: 16,
-                                          )
-                                        : null,
-                                  ),
-                                );
-                              }
-                              return Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
+                            return Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
                                 ),
-                                child: CircleAvatar(
-                                  radius: 15,
-                                  backgroundColor: Colors.white.withOpacity(
-                                    0.2,
-                                  ),
-                                  child: Icon(
-                                    Icons.person,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Welcome Back!',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                              ),
+                              child: CircleAvatar(
+                                radius: 15,
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                                backgroundImage:
+                                    profileImageUrl?.isNotEmpty == true
+                                    ? NetworkImage(profileImageUrl!)
+                                    : null,
+                                child: profileImageUrl?.isNotEmpty != true
+                                    ? Icon(
+                                        Icons.person,
+                                        color: Colors.white,
+                                        size: 16,
+                                      )
+                                    : null,
+                              ),
+                            );
+                          }
+                          return Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Need Consultation Now?',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Consult our professional Lawyers',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const Spacer(),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() => _selectedIndex = 1);
+                            child: CircleAvatar(
+                              radius: 15,
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          );
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4AF37), // Gold
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                        child: const Text(
-                          'Book Now',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Welcome Back!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Need Consultation Now?',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Consult our professional Lawyers',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _selectedIndex = 1);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37), // Gold
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text(
+                      'Book Now',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
