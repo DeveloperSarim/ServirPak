@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import '../../services/auth_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../config/cloudinary_config.dart';
@@ -24,6 +26,9 @@ class _LawyerProfileManagementScreenState
   LawyerModel? _currentLawyer;
   bool _isLoading = false;
   bool _isEditing = false;
+
+  // For web compatibility
+  Uint8List? _profileImageBytes;
 
   // Cities list
   List<String> _cities = [];
@@ -263,27 +268,67 @@ class _LawyerProfileManagementScreenState
 
         // Upload to Cloudinary
         print('🔄 Starting image upload...');
-        print('🔄 Image path: ${image.path}');
-        print('🔄 File exists: ${await File(image.path).exists()}');
+
+        if (kIsWeb) {
+          // For web, read bytes immediately
+          try {
+            final bytes = await image.readAsBytes();
+            setState(() {
+              _profileImageBytes = bytes;
+            });
+            print('🔄 Image bytes read for web: ${bytes.length} bytes');
+          } catch (e) {
+            print('❌ Error reading image bytes on web: $e');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error reading image: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+        } else {
+          // For mobile, check file path
+          print('🔄 Image path: ${image.path}');
+          print('🔄 File exists: ${await File(image.path).exists()}');
+        }
 
         // Debug Cloudinary config
         CloudinaryConfig.printConfig();
 
         try {
-          String? imageUrl = await CloudinaryService.uploadImageSimple(
-            file: File(image.path),
-            folder: 'lawyer_profile_${_currentLawyer!.id}',
-          );
+          String? imageUrl;
+
+          if (kIsWeb) {
+            // For web, use bytes
+            imageUrl = await CloudinaryService.uploadImageSimple(
+              file: _profileImageBytes!,
+              folder: 'lawyer_profile_${_currentLawyer!.id}',
+            );
+          } else {
+            // For mobile, use File
+            imageUrl = await CloudinaryService.uploadImageSimple(
+              file: File(image.path),
+              folder: 'lawyer_profile_${_currentLawyer!.id}',
+            );
+          }
 
           print('🔄 Upload result: $imageUrl');
 
           if (imageUrl == null) {
             print('🔄 Simple upload failed, trying alternative method...');
             // Try alternative method
-            imageUrl = await CloudinaryService.uploadImage(
-              file: File(image.path),
-              folder: 'lawyer_profile_${_currentLawyer!.id}',
-            );
+            if (kIsWeb) {
+              imageUrl = await CloudinaryService.uploadImage(
+                file: _profileImageBytes!,
+                folder: 'lawyer_profile_${_currentLawyer!.id}',
+              );
+            } else {
+              imageUrl = await CloudinaryService.uploadImage(
+                file: File(image.path),
+                folder: 'lawyer_profile_${_currentLawyer!.id}',
+              );
+            }
             print('🔄 Alternative upload result: $imageUrl');
           }
 

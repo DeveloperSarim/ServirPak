@@ -48,9 +48,13 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
   File? _profileImage;
   Uint8List? _profileImageBytes; // For web compatibility
 
+  // Document bytes for web compatibility
+  Map<String, Uint8List> _documentBytes = <String, Uint8List>{};
+  Map<String, String> _documentNames = <String, String>{};
+
   // Upload progress
-  Map<String, bool> _uploadProgress = {};
-  Map<String, String> _uploadedUrls = {};
+  Map<String, bool> _uploadProgress = <String, bool>{};
+  Map<String, String> _uploadedUrls = <String, String>{};
 
   final List<String> _provinces = [
     'Punjab',
@@ -114,46 +118,77 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
         allowMultiple: false,
       );
 
-      if (result != null && result.files.single.path != null) {
-        File file = File(result.files.single.path!);
+      if (result != null && result.files.isNotEmpty) {
+        PlatformFile file = result.files.first;
 
-        setState(() {
-          switch (documentType) {
-            case 'cnic_front':
-              _cnicFront = file;
-              break;
-            case 'cnic_back':
-              _cnicBack = file;
-              break;
-            case 'bar_council':
-              _barCouncilCertificate = file;
-              break;
-            case 'degree':
-              _degreeCertificate = file;
-              break;
+        if (kIsWeb) {
+          // For web, use bytes
+          if (file.bytes != null) {
+            setState(() {
+              _documentBytes[documentType] = file.bytes!;
+              _documentNames[documentType] = file.name;
+            });
           }
-        });
+        } else {
+          // For mobile, use file path
+          if (file.path != null) {
+            File fileObj = File(file.path!);
+            setState(() {
+              switch (documentType) {
+                case 'cnic_front':
+                  _cnicFront = fileObj;
+                  break;
+                case 'cnic_back':
+                  _cnicBack = fileObj;
+                  break;
+                case 'bar_council':
+                  _barCouncilCertificate = fileObj;
+                  break;
+                case 'degree':
+                  _degreeCertificate = fileObj;
+                  break;
+              }
+            });
+          }
+        }
       }
     } catch (e) {
       _showErrorSnackBar('Error picking document: $e');
     }
   }
 
-  Future<void> _uploadDocument(File file, String documentType) async {
+  Future<void> _uploadDocument(dynamic file, String documentType) async {
     setState(() {
       _uploadProgress[documentType] = true;
     });
 
     try {
-      String? url = await CloudinaryService.uploadDocument(
-        file: file,
-        folder: 'lawyer_documents/${widget.userId}',
-        publicId: '${documentType}_${DateTime.now().millisecondsSinceEpoch}',
-      );
+      String? url;
+
+      if (kIsWeb) {
+        // For web, use bytes
+        if (_documentBytes.isNotEmpty &&
+            _documentBytes.containsKey(documentType)) {
+          url = await CloudinaryService.uploadDocument(
+            file: _documentBytes[documentType]!,
+            folder: 'lawyer_documents/${widget.userId}',
+            publicId:
+                '${documentType}_${DateTime.now().millisecondsSinceEpoch}',
+            originalFileName: _documentNames[documentType],
+          );
+        }
+      } else {
+        // For mobile, use File object
+        url = await CloudinaryService.uploadDocument(
+          file: file,
+          folder: 'lawyer_documents/${widget.userId}',
+          publicId: '${documentType}_${DateTime.now().millisecondsSinceEpoch}',
+        );
+      }
 
       if (url != null) {
         setState(() {
-          _uploadedUrls[documentType] = url;
+          _uploadedUrls[documentType] = url!;
           _uploadProgress[documentType] = false;
         });
       } else {
@@ -210,9 +245,21 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     // Check required documents
-    if (_cnicFront == null ||
-        _cnicBack == null ||
-        _barCouncilCertificate == null) {
+    bool hasRequiredDocs = false;
+    if (kIsWeb) {
+      hasRequiredDocs =
+          _documentBytes.isNotEmpty &&
+          _documentBytes.containsKey('cnic_front') &&
+          _documentBytes.containsKey('cnic_back') &&
+          _documentBytes.containsKey('bar_council');
+    } else {
+      hasRequiredDocs =
+          _cnicFront != null &&
+          _cnicBack != null &&
+          _barCouncilCertificate != null;
+    }
+
+    if (!hasRequiredDocs) {
       _showErrorSnackBar('Please upload all required documents');
       return;
     }
@@ -223,17 +270,37 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
 
     try {
       // Upload all documents
-      await Future.wait([
-        _uploadDocument(_cnicFront!, 'cnic_front'),
-        _uploadDocument(_cnicBack!, 'cnic_back'),
-        _uploadDocument(_barCouncilCertificate!, 'bar_council'),
-        if (_degreeCertificate != null)
-          _uploadDocument(_degreeCertificate!, 'degree'),
-        if (_profileImage != null) _uploadProfileImage(),
-      ]);
+      List<Future> uploadTasks = [];
+
+      if (kIsWeb) {
+        uploadTasks.addAll([
+          _uploadDocument(null, 'cnic_front'),
+          _uploadDocument(null, 'cnic_back'),
+          _uploadDocument(null, 'bar_council'),
+        ]);
+        if (_documentBytes.isNotEmpty && _documentBytes.containsKey('degree')) {
+          uploadTasks.add(_uploadDocument(null, 'degree'));
+        }
+      } else {
+        uploadTasks.addAll([
+          _uploadDocument(_cnicFront!, 'cnic_front'),
+          _uploadDocument(_cnicBack!, 'cnic_back'),
+          _uploadDocument(_barCouncilCertificate!, 'bar_council'),
+        ]);
+        if (_degreeCertificate != null) {
+          uploadTasks.add(_uploadDocument(_degreeCertificate!, 'degree'));
+        }
+      }
+
+      if (_profileImage != null) {
+        uploadTasks.add(_uploadProfileImage());
+      }
+
+      await Future.wait(uploadTasks);
 
       // Check if all uploads completed
       bool allUploaded =
+          _uploadedUrls.isNotEmpty &&
           _uploadedUrls.containsKey('cnic_front') &&
           _uploadedUrls.containsKey('cnic_back') &&
           _uploadedUrls.containsKey('bar_council');
@@ -314,6 +381,19 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
     required File? file,
     required bool isRequired,
   }) {
+    // Check if document is uploaded (for both web and mobile)
+    bool isDocumentUploaded = false;
+    String fileName = '';
+
+    if (kIsWeb) {
+      isDocumentUploaded =
+          _documentBytes.isNotEmpty && _documentBytes.containsKey(documentType);
+      fileName = _documentNames[documentType] ?? '';
+    } else {
+      isDocumentUploaded = file != null;
+      fileName = file?.path.split('/').last ?? '';
+    }
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
@@ -335,7 +415,7 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            if (file != null) ...[
+            if (isDocumentUploaded) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -349,17 +429,19 @@ class _LawyerRegistrationScreenState extends State<LawyerRegistrationScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        file.path.split('/').last,
+                        fileName,
                         style: TextStyle(color: Colors.green.shade700),
                       ),
                     ),
-                    if (_uploadProgress[documentType] == true)
+                    if (_uploadProgress.isNotEmpty &&
+                        _uploadProgress[documentType] == true)
                       const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                    if (_uploadedUrls.containsKey(documentType))
+                    if (_uploadedUrls.isNotEmpty &&
+                        _uploadedUrls.containsKey(documentType))
                       Icon(Icons.cloud_done, color: Colors.green.shade600),
                   ],
                 ),

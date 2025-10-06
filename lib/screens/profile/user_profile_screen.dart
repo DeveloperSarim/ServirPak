@@ -101,50 +101,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: _isDarkMode ? Colors.grey[800] : Colors.white,
-        elevation: 0,
-        title: Text(
-          'ServirPak',
-          style: TextStyle(
-            color: _isDarkMode ? Colors.white : const Color(0xFF8B4513),
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isDarkMode ? Icons.light_mode : Icons.dark_mode,
-              color: _isDarkMode ? Colors.white : const Color(0xFF8B4513),
-            ),
-            onPressed: _toggleTheme,
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.info_outline,
-              color: _isDarkMode ? Colors.white : const Color(0xFF8B4513),
-            ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('About ServirPak'),
-                  content: const Text(
-                    'ServirPak is your trusted legal consultation platform. Connect with verified lawyers and get expert legal advice.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
       body: _currentUser == null
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF8B4513)),
