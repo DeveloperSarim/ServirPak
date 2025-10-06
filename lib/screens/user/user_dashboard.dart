@@ -88,18 +88,6 @@ class _UserDashboardState extends State<UserDashboard> {
       ),
       centerTitle: true,
       actions: [
-        // Demo Button
-        IconButton(
-          icon: const Icon(Icons.info, color: Color(0xFF8B4513)),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const WorkingBookingDemo(),
-              ),
-            );
-          },
-        ),
         _currentUserId != null
             ? StreamBuilder<DocumentSnapshot>(
                 stream: _firestore
