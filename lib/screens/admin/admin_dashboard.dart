@@ -364,7 +364,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
+              childAspectRatio: 2.2,
               children: [
                 _buildStatCard(
                   'Total Users',
@@ -447,7 +447,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
+              childAspectRatio: 2.2,
               children: [
                 _buildStatCard(
                   'Total Consultations',
@@ -548,7 +548,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -562,22 +562,32 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 32, color: color),
-          const SizedBox(height: 8),
+          Icon(icon, size: 24, color: color),
+          const SizedBox(height: 6),
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
               color: color,
             ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             title,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.grey,
+              height: 1.1,
+            ),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
