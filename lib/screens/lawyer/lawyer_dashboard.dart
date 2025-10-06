@@ -8,7 +8,6 @@ import '../../models/consultation_model.dart';
 import '../../models/user_model.dart';
 import '../../models/chat_model.dart';
 import '../auth/login_screen.dart';
-import 'lawyer_analytics_screen.dart';
 import 'lawyer_chat_list_screen.dart';
 import 'lawyer_consultations_screen.dart';
 import 'lawyer_chat_screen.dart';
@@ -280,55 +279,7 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             '${_currentLawyer?.specialization ?? 'Legal Practice'} • ${_currentLawyer?.city ?? 'Location'}',
             style: const TextStyle(fontSize: 16, color: Colors.white70),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildQuickActionButton(
-                'Analytics',
-                Icons.analytics,
-                () => _navigateToAnalytics(),
-              ),
-              const SizedBox(width: 12),
-              _buildQuickActionButton(
-                'Upload Docs',
-                Icons.upload,
-                () => setState(() => _selectedIndex = 3),
-              ),
-            ],
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionButton(
-    String title,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1076,17 +1027,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
     return const LawyerProfileManagementScreen();
   }
 
-  void _navigateToAnalytics() {
-    if (_currentLawyer != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LawyerAnalyticsScreen(lawyer: _currentLawyer!),
-        ),
-      );
-    }
-  }
-
   void _showCaseNotesDialog() {
     showDialog(
       context: context,
@@ -1247,17 +1187,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Close'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _navigateToAnalytics();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8B4513),
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('View Analytics'),
               ),
             ],
           );
