@@ -83,7 +83,7 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
             widget.lawyerId,
           );
       setState(() {
-        _officeHours = hours.toString();
+        _officeHours = _formatAvailability(hours);
       });
 
       // Calculate platform fee and total
@@ -91,6 +91,55 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
     } catch (e) {
       print('❌ Error loading lawyer details: $e');
     }
+  }
+
+  String _formatAvailability(Map<String, dynamic> hours) {
+    List<String> workingDays = [];
+    List<String> nonWorkingDays = [];
+
+    // Days of the week
+    List<String> days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+
+    for (String day in days) {
+      if (hours.containsKey(day.toLowerCase())) {
+        Map<String, dynamic> dayData = hours[day.toLowerCase()];
+        bool isWorking = dayData['isWorking'] ?? false;
+        String startTime = dayData['startTime'] ?? '09:00';
+        String endTime = dayData['endTime'] ?? '17:00';
+
+        if (isWorking) {
+          workingDays.add('$day: $startTime - $endTime');
+        } else {
+          nonWorkingDays.add(day);
+        }
+      }
+    }
+
+    String result = '';
+
+    if (workingDays.isNotEmpty) {
+      result += 'Working Days:\n';
+      for (String day in workingDays) {
+        result += '• $day\n';
+      }
+    }
+
+    if (nonWorkingDays.isNotEmpty) {
+      result += '\nNon-Working Days:\n';
+      for (String day in nonWorkingDays) {
+        result += '• $day (Closed)\n';
+      }
+    }
+
+    return result.trim();
   }
 
   void _calculateFees() {
@@ -579,22 +628,46 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
                 color: Color(0xFF8B4513),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Icon(
-                  Icons.access_time,
-                  color: Color(0xFF8B4513),
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _officeHours,
-                    style: const TextStyle(fontSize: 16),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time,
+                        color: Color(0xFF8B4513),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Office Hours',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF8B4513),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Text(
+                    _officeHours,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
             Container(
