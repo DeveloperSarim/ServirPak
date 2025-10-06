@@ -3,14 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../services/consultation_service.dart';
 import '../../services/demo_data_service.dart';
-// import '../../services/chat_service.dart';
+import '../../services/realtime_chat_service.dart';
 import '../../constants/app_constants.dart';
 import '../../models/consultation_model.dart';
 import '../../models/lawyer_model.dart';
 import '../../models/user_model.dart';
+import '../../models/chat_model.dart';
 import '../auth/login_screen.dart';
 // import '../consultation/consultation_booking_screen.dart';
 import 'user_chat_list_screen.dart';
+import 'user_chat_screen.dart';
 import '../profile/user_profile_screen.dart';
 import 'simple_booking_screen.dart';
 import 'lawyer_list_screen.dart';
@@ -40,7 +42,7 @@ class _UserDashboardState extends State<UserDashboard> {
   Future<void> _loadUserId() async {
     try {
       final session = await AuthService.getSavedUserSession();
-      final userId = session?['userId'] as String?;
+      final userId = session['userId'] as String;
 
       if (mounted) {
         setState(() {
@@ -1382,74 +1384,107 @@ class _UserDashboardState extends State<UserDashboard> {
                   const SizedBox(width: 4),
                   Text(data['city'] ?? 'Unknown'),
                   const Spacer(),
-                  ElevatedButton(
-                    onPressed: () async {
-                      // Create lawyer model from Firestore data
-                      LawyerModel lawyerModel = LawyerModel(
-                        id: data['id'] as String? ?? 'lawyer_$index',
-                        userId: data['userId'] as String? ?? 'lawyer_$index',
-                        email:
-                            data['email'] as String? ?? 'lawyer@servipak.com',
-                        name: data['name'] as String? ?? 'Unknown Lawyer',
-                        phone: data['phone'] as String? ?? '+92-300-0000000',
-                        status:
-                            data['status'] as String? ??
-                            AppConstants.verifiedStatus,
-                        specialization:
-                            data['specialization'] as String? ??
-                            'General Practice',
-                        experience: data['experience'] as String? ?? '0 years',
-                        barCouncilNumber:
-                            data['barCouncilNumber'] as String? ??
-                            'BC-2023-000',
-                        bio: data['bio'] as String? ?? 'Experienced lawyer',
-                        rating: data['rating'] as double? ?? 0.0,
-                        totalCases: data['totalCases'] as int? ?? 0,
-                        languages: List<String>.from(
-                          data['languages'] as List? ?? ['Urdu', 'English'],
+                  Row(
+                    children: [
+                      // Chat Button
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          await _startChatWithLawyer(data, index);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        address:
-                            data['address'] as String? ??
-                            'Address not provided',
-                        city: data['city'] as String? ?? 'Unknown',
-                        province: data['province'] as String? ?? 'Unknown',
-                        createdAt: DateTime.now(),
-                      );
-
-                      // Get current user
-                      UserModel? currentUser = await _getCurrentUser();
-
-                      if (currentUser != null) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SimpleBookingScreen(
-                              lawyer: lawyerModel,
-                              user: currentUser,
+                        icon: const Icon(Icons.chat, size: 16),
+                        label: const Text('Chat'),
+                      ),
+                      const SizedBox(width: 8),
+                      // Book Consultation Button
+                      ElevatedButton(
+                        onPressed: () async {
+                          // Create lawyer model from Firestore data
+                          LawyerModel lawyerModel = LawyerModel(
+                            id: data['id'] as String? ?? 'lawyer_$index',
+                            userId:
+                                data['userId'] as String? ?? 'lawyer_$index',
+                            email:
+                                data['email'] as String? ??
+                                'lawyer@servipak.com',
+                            name: data['name'] as String? ?? 'Unknown Lawyer',
+                            phone:
+                                data['phone'] as String? ?? '+92-300-0000000',
+                            status:
+                                data['status'] as String? ??
+                                AppConstants.verifiedStatus,
+                            specialization:
+                                data['specialization'] as String? ??
+                                'General Practice',
+                            experience:
+                                data['experience'] as String? ?? '0 years',
+                            barCouncilNumber:
+                                data['barCouncilNumber'] as String? ??
+                                'BC-2023-000',
+                            bio: data['bio'] as String? ?? 'Experienced lawyer',
+                            rating: data['rating'] as double? ?? 0.0,
+                            totalCases: data['totalCases'] as int? ?? 0,
+                            languages: List<String>.from(
+                              data['languages'] as List? ?? ['Urdu', 'English'],
                             ),
+                            address:
+                                data['address'] as String? ??
+                                'Address not provided',
+                            city: data['city'] as String? ?? 'Unknown',
+                            province: data['province'] as String? ?? 'Unknown',
+                            createdAt: DateTime.now(),
+                          );
+
+                          // Get current user
+                          UserModel? currentUser = await _getCurrentUser();
+
+                          if (currentUser != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SimpleBookingScreen(
+                                  lawyer: lawyerModel,
+                                  user: currentUser,
+                                ),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Please login to book consultation',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(
+                            0xFF8B4513,
+                          ), // Saddle Brown
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please login to book consultation'),
-                            backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B4513), // Saddle Brown
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                        ),
+                        child: const Text('Book'),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Book Consultation'),
+                    ],
                   ),
                 ],
               ),
@@ -2378,6 +2413,89 @@ class _UserDashboardState extends State<UserDashboard> {
         ],
       ),
     );
+  }
+
+  // Start chat with lawyer
+  Future<void> _startChatWithLawyer(
+    Map<String, dynamic> lawyerData,
+    int index,
+  ) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Get current user
+      UserModel? currentUser = await _getCurrentUser();
+
+      if (currentUser == null) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login to start chatting'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Extract lawyer information
+      String lawyerId =
+          lawyerData['userId'] as String? ??
+          lawyerData['id'] as String? ??
+          'lawyer_$index';
+      String lawyerName = lawyerData['name'] as String? ?? 'Unknown Lawyer';
+      String lawyerEmail =
+          lawyerData['email'] as String? ?? 'lawyer@servipak.com';
+      String? lawyerProfileImage = lawyerData['profileImage'] as String?;
+
+      // Create or get existing chat
+      await RealtimeChatService.createChatRealtime(
+        lawyerId: lawyerId,
+        userId: currentUser.id,
+      );
+
+      // Create ChatModel for navigation
+      ChatModel chat = ChatModel(
+        id: _generateChatId(lawyerId, currentUser.id),
+        lawyerId: lawyerId,
+        lawyerName: lawyerName,
+        lawyerEmail: lawyerEmail,
+        lawyerProfileImage: lawyerProfileImage,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userEmail: currentUser.email,
+        userProfileImage: currentUser.profileImage,
+        createdAt: DateTime.now(),
+        consultationIds: [],
+      );
+
+      Navigator.pop(context); // Close loading dialog
+
+      // Navigate to chat screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => UserChatScreen(chat: chat)),
+      );
+    } catch (e) {
+      Navigator.pop(context); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to start chat: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Generate unique chat ID
+  String _generateChatId(String lawyerId, String userId) {
+    List<String> ids = [lawyerId, userId];
+    ids.sort();
+    return '${ids[0]}_${ids[1]}';
   }
 
   Future<void> _logout() async {

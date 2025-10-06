@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/user_model.dart';
+import '../../models/chat_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/realtime_chat_service.dart';
 import '../../constants/app_constants.dart';
 import 'lawyer_booking_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
+import 'user_chat_screen.dart';
 
 class LawyerListScreen extends StatefulWidget {
   const LawyerListScreen({super.key});
@@ -541,12 +544,27 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _startChatWithLawyer(lawyerId, data),
+                    icon: const Icon(Icons.chat, size: 16),
+                    label: const Text('Chat'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _bookLawyer(lawyerId, data),
                     icon: const Icon(Icons.book_online, size: 16),
-                    label: const Text('Book Now'),
+                    label: const Text('Book'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF8B4513),
                       foregroundColor: Colors.white,
@@ -642,5 +660,81 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
             LawyerBookingScreen(lawyerId: lawyerId, lawyerData: data),
       ),
     );
+  }
+
+  // Start chat with lawyer
+  Future<void> _startChatWithLawyer(
+    String lawyerId,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Get current user
+      if (_currentUser == null) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login to start chatting'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Extract lawyer information
+      String lawyerName = data['name'] as String? ?? 'Unknown Lawyer';
+      String lawyerEmail = data['email'] as String? ?? 'lawyer@servipak.com';
+      String? lawyerProfileImage = data['profileImage'] as String?;
+
+      // Create or get existing chat
+      await RealtimeChatService.createChatRealtime(
+        lawyerId: lawyerId,
+        userId: _currentUser!.id,
+      );
+
+      // Create ChatModel for navigation
+      ChatModel chat = ChatModel(
+        id: _generateChatId(lawyerId, _currentUser!.id),
+        lawyerId: lawyerId,
+        lawyerName: lawyerName,
+        lawyerEmail: lawyerEmail,
+        lawyerProfileImage: lawyerProfileImage,
+        userId: _currentUser!.id,
+        userName: _currentUser!.name,
+        userEmail: _currentUser!.email,
+        userProfileImage: _currentUser!.profileImage,
+        createdAt: DateTime.now(),
+        consultationIds: [],
+      );
+
+      Navigator.pop(context); // Close loading dialog
+
+      // Navigate to chat screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => UserChatScreen(chat: chat)),
+      );
+    } catch (e) {
+      Navigator.pop(context); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to start chat: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Generate unique chat ID
+  String _generateChatId(String lawyerId, String userId) {
+    List<String> ids = [lawyerId, userId];
+    ids.sort();
+    return '${ids[0]}_${ids[1]}';
   }
 }
