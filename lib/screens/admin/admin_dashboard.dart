@@ -1038,48 +1038,222 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (data['status'] != 'verified')
-                  TextButton.icon(
-                    onPressed: () =>
-                        _handleLawyerAction(lawyerId, 'approve', data),
-                    icon: const Icon(Icons.check, color: Colors.green),
-                    label: const Text('Verify Lawyer'),
-                  ),
-                if (data['status'] == 'verified') ...[
-                  TextButton.icon(
-                    onPressed: () => _showEditUserDialog(lawyerId, data),
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    label: const Text('Edit Details'),
-                  ),
-                  TextButton.icon(
-                    onPressed: () {
-                      String email = data['email'] ?? '';
-                      if (email.isNotEmpty) {
-                        AuthService.resetUserPassword(email: email);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '$email par password reset email send ho gaya!',
+            // Responsive Action Buttons
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // If screen is too narrow, stack buttons vertically
+                if (constraints.maxWidth < 400) {
+                  return Column(
+                    children: [
+                      if (data['status'] != 'verified')
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _handleLawyerAction(lawyerId, 'approve', data),
+                            icon: const Icon(
+                              Icons.check,
+                              color: Colors.green,
+                              size: 16,
                             ),
-                            backgroundColor: Colors.green,
+                            label: const Text('Verify Lawyer'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.green),
+                              foregroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                            ),
                           ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.lock_reset, color: Colors.orange),
-                    label: const Text('Reset Password'),
-                  ),
-                ],
-                TextButton.icon(
-                  onPressed: () =>
-                      _handleLawyerAction(lawyerId, 'reject', data),
-                  icon: const Icon(Icons.close, color: Colors.red),
-                  label: const Text('Delete'),
-                ),
-              ],
+                        ),
+                      if (data['status'] == 'verified') ...[
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _showEditUserDialog(lawyerId, data),
+                            icon: const Icon(
+                              Icons.edit,
+                              color: Colors.blue,
+                              size: 16,
+                            ),
+                            label: const Text('Edit Details'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.blue),
+                              foregroundColor: Colors.blue,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              String email = data['email'] ?? '';
+                              if (email.isNotEmpty) {
+                                AuthService.resetUserPassword(email: email);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '$email par password reset email send ho gaya!',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.lock_reset,
+                              color: Colors.orange,
+                              size: 16,
+                            ),
+                            label: const Text('Reset Password'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.orange),
+                              foregroundColor: Colors.orange,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _handleLawyerAction(lawyerId, 'reject', data),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.red,
+                            size: 16,
+                          ),
+                          label: const Text('Delete'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.red),
+                            foregroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  // For wider screens, use horizontal layout with flexible sizing
+                  return Row(
+                    children: [
+                      if (data['status'] != 'verified')
+                        Flexible(
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _handleLawyerAction(lawyerId, 'approve', data),
+                            icon: const Icon(
+                              Icons.check,
+                              color: Colors.green,
+                              size: 16,
+                            ),
+                            label: const Text('Verify Lawyer'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.green),
+                              foregroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (data['status'] == 'verified') ...[
+                        Flexible(
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _showEditUserDialog(lawyerId, data),
+                            icon: const Icon(
+                              Icons.edit,
+                              color: Colors.blue,
+                              size: 16,
+                            ),
+                            label: const Text('Edit Details'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.blue),
+                              foregroundColor: Colors.blue,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              String email = data['email'] ?? '';
+                              if (email.isNotEmpty) {
+                                AuthService.resetUserPassword(email: email);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '$email par password reset email send ho gaya!',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.lock_reset,
+                              color: Colors.orange,
+                              size: 16,
+                            ),
+                            label: const Text('Reset Password'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.orange),
+                              foregroundColor: Colors.orange,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              _handleLawyerAction(lawyerId, 'reject', data),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.red,
+                            size: 16,
+                          ),
+                          label: const Text('Delete'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.red),
+                            foregroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
           ],
         ),
