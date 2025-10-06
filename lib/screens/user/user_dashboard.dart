@@ -318,7 +318,7 @@ class _UserDashboardState extends State<UserDashboard> {
           ),
           ListTile(
             leading: const Icon(Icons.folder, color: Color(0xFF8B4513)),
-            title: const Text('My Cases'),
+            title: const Text('My Consultations'),
             onTap: () {
               Navigator.pop(context);
               setState(() => _selectedIndex = 2);

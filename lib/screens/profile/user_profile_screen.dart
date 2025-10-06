@@ -10,6 +10,7 @@ import '../../constants/app_constants.dart';
 import '../../models/user_model.dart';
 import '../auth/login_screen.dart';
 import 'my_consultations_screen.dart';
+import 'edit_profile_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -287,7 +288,24 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             icon: Icons.edit,
             title: 'Edit Profile',
             onTap: () {
-              // Navigate to edit profile screen
+              if (_currentUser != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        EditProfileScreen(user: _currentUser!),
+                  ),
+                ).then((updatedUser) {
+                  if (updatedUser != null) {
+                    // Refresh the profile screen with updated user data
+                    _loadUserData();
+                  }
+                });
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('User data not available')),
+                );
+              }
             },
           ),
           _buildDivider(),
@@ -305,18 +323,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
           _buildDivider(),
           _buildListTile(
-            icon: Icons.folder,
-            title: 'My Cases',
-            onTap: () {
-              // Navigate to cases screen
-            },
-          ),
-          _buildDivider(),
-          _buildListTile(
             icon: Icons.payment,
             title: 'Payment History',
             onTap: () {
-              // Navigate to payment history screen
+              _showPaymentHistoryDialog();
             },
           ),
           _buildDivider(),
@@ -324,7 +334,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             icon: Icons.help_outline,
             title: 'Help & Support',
             onTap: () {
-              // Navigate to help screen
+              _showHelpSupportDialog();
             },
           ),
           _buildDivider(),
@@ -465,5 +475,208 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ),
       );
     }
+  }
+
+  // Payment History Dialog
+  void _showPaymentHistoryDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Payment History'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Your payment transactions',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _buildPaymentItem(
+                'Consultation with Lawyer Ahmed',
+                'PKR 2,500',
+                'Completed',
+                '2024-01-15',
+                Colors.green,
+              ),
+              _buildPaymentItem(
+                'Legal Document Review',
+                'PKR 1,200',
+                'Completed',
+                '2024-01-10',
+                Colors.green,
+              ),
+              _buildPaymentItem(
+                'Case Consultation',
+                'PKR 3,000',
+                'Pending',
+                '2024-01-20',
+                Colors.orange,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentItem(
+    String title,
+    String amount,
+    String status,
+    String date,
+    Color statusColor,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+              Text(
+                amount,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF8B4513),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(date, style: TextStyle(color: Colors.grey[600])),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  status,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Help & Support Dialog
+  void _showHelpSupportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Help & Support'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Need help? We\'re here for you!',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              _buildSupportOption(
+                icon: Icons.phone,
+                title: 'Call Support',
+                subtitle: '+92-300-1234567',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Calling support...')),
+                  );
+                },
+              ),
+              _buildSupportOption(
+                icon: Icons.email,
+                title: 'Email Support',
+                subtitle: 'support@servirpak.com',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Opening email client...')),
+                  );
+                },
+              ),
+              _buildSupportOption(
+                icon: Icons.chat,
+                title: 'Live Chat',
+                subtitle: 'Available 24/7',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Starting live chat...')),
+                  );
+                },
+              ),
+              _buildSupportOption(
+                icon: Icons.help,
+                title: 'FAQ',
+                subtitle: 'Frequently Asked Questions',
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Opening FAQ...')),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSupportOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF8B4513)),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: onTap,
+    );
   }
 }

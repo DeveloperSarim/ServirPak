@@ -233,7 +233,11 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       actions = [
         {'title': 'Find Lawyers', 'icon': Icons.search, 'color': Colors.blue},
-        {'title': 'My Cases', 'icon': Icons.folder, 'color': Colors.green},
+        {
+          'title': 'My Consultations',
+          'icon': Icons.folder,
+          'color': Colors.green,
+        },
         {'title': 'Messages', 'icon': Icons.message, 'color': Colors.orange},
         {'title': 'Help', 'icon': Icons.help, 'color': const Color(0xFF8B4513)},
       ];

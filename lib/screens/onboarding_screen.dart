@@ -17,28 +17,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingPage(
       title: 'Welcome to ServirPak',
       description:
-          'Aapka trusted legal services platform. Qualified lawyers se connect karein aur expert legal advice paayein.',
+          'Your trusted legal services platform. Connect with qualified lawyers and get expert legal advice.',
       image: Icons.balance,
       color: const Color(0xFF8B4513), // Saddle Brown
     ),
     OnboardingPage(
-      title: 'Best Lawyers Find Karein',
+      title: 'Find the Best Lawyers',
       description:
-          'Verified lawyers ko specialization, experience, aur location ke hisaab se browse karein. Reviews aur ratings dekhein.',
+          'Browse verified lawyers by specialization, experience, and location. Check reviews and ratings to make informed decisions.',
       image: Icons.people_alt,
       color: const Color(0xFFA0522D), // Sienna
     ),
     OnboardingPage(
       title: 'Secure & Reliable',
       description:
-          'Saare lawyers proper documentation ke saath verified hain. Aapke legal matters complete confidentiality ke saath handle hote hain.',
+          'All lawyers are verified with proper documentation. Your legal matters are handled with complete confidentiality.',
       image: Icons.verified,
       color: const Color(0xFF6B4423), // Dark Brown
     ),
     OnboardingPage(
       title: '24/7 Legal Support',
       description:
-          'Jab bhi zarurat ho, legal assistance paayein. Hamara platform aapki convenience ke liye hamesha available hai.',
+          'Get legal assistance whenever you need it. Our platform is always available for your convenience.',
       image: Icons.phone_in_talk,
       color: const Color(0xFF8B4513), // Saddle Brown
     ),
