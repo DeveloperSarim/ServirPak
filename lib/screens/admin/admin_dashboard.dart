@@ -6,9 +6,6 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
-import '../../services/lawyer_service.dart';
-import '../../services/review_service.dart';
-import '../../services/user_seed_service.dart';
 import '../../constants/app_constants.dart';
 import '../../services/lawyer_management_service.dart';
 import '../auth/login_screen.dart';
@@ -23,8 +20,6 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final LawyerService _lawyerService = LawyerService();
-  final ReviewService _reviewService = ReviewService();
   int _pendingLawyersCount = 0;
 
   @override
@@ -225,11 +220,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
             const SizedBox(height: 20),
 
-            // Seed Data Button
-            _buildSeedDataButton(),
-
-            const SizedBox(height: 20),
-
             // Recent Activity
             _buildRecentActivity(),
           ],
@@ -323,52 +313,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSeedDataButton() {
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _seedAllData,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8B4513),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.storage),
-            label: const Text(
-              '🌱 Seed All Data (Users, Lawyers, Reviews, Consultations, Chats)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _seedLawyerData,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.gavel),
-            label: const Text(
-              '⚖️ Seed Only Lawyers & Reviews',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -990,15 +934,53 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.green,
-                  child: Text(
-                    data['name']?.toString().substring(0, 1).toUpperCase() ??
-                        'L',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  radius: 25,
+                  backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
+                  child:
+                      data['profileImage'] != null &&
+                          data['profileImage'].toString().isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            data['profileImage'],
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Icon(
+                                Icons.person,
+                                color: Color(0xFF8B4513),
+                                size: 25,
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Text(
+                                data['name']
+                                        ?.toString()
+                                        .substring(0, 1)
+                                        .toUpperCase() ??
+                                    'L',
+                                style: const TextStyle(
+                                  color: Color(0xFF8B4513),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Text(
+                          data['name']
+                                  ?.toString()
+                                  .substring(0, 1)
+                                  .toUpperCase() ??
+                              'L',
+                          style: const TextStyle(
+                            color: Color(0xFF8B4513),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1192,12 +1174,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             _buildAdminSettingsSection(),
             const SizedBox(height: 24),
             _buildSystemSettingsSection(),
-            const SizedBox(height: 24),
-            _buildPlatformSettingsSection(),
-            const SizedBox(height: 24),
-            _buildReportsSection(),
-            const SizedBox(height: 24),
-            _buildDangerZoneSection(),
           ],
         ),
       ),
@@ -1209,29 +1185,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
       title: 'Admin Management',
       children: [
         _buildListTile(
-          icon: Icons.person_add,
-          title: 'Add New Admin',
-          subtitle: 'Create a new administrator account',
-          onTap: () => _showAddAdminDialog(),
-        ),
-        _buildListTile(
-          icon: Icons.admin_panel_settings,
-          title: 'Admin Permissions',
-          subtitle: 'Manage admin access levels',
-          onTap: () => _showAdminPermissionsDialog(),
-        ),
-        _buildListTile(
-          icon: Icons.security,
-          title: 'Security Settings',
-          subtitle: 'Configure platform security',
-          onTap: () => _showSecuritySettingsDialog(),
-        ),
-        _buildListTile(
-          icon: Icons.refresh,
-          title: 'Replace All Lawyers',
-          subtitle: 'Clear existing lawyers and add new ones with passwords',
-          onTap: () => _showReplaceLawyersDialog(),
-          textColor: Colors.blue,
+          icon: Icons.logout,
+          title: 'Logout',
+          subtitle: 'Sign out of admin account',
+          onTap: _logout,
+          textColor: Colors.orange,
         ),
       ],
     );
@@ -1246,99 +1204,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           title: 'Platform Configuration',
           subtitle: 'Configure platform-wide settings',
           onTap: () => _showPlatformConfigDialog(),
-        ),
-        _buildListTile(
-          icon: Icons.notifications,
-          title: 'Notification Settings',
-          subtitle: 'Manage system notifications',
-          onTap: () => _showNotificationSettingsDialog(),
-        ),
-        _buildListTile(
-          icon: Icons.backup,
-          title: 'Data Backup',
-          subtitle: 'Backup and restore data',
-          onTap: () => _showBackupDialog(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPlatformSettingsSection() {
-    return _buildSection(
-      title: 'Platform Settings',
-      children: [
-        _buildListTile(
-          icon: Icons.monetization_on,
-          title: 'Pricing Configuration',
-          subtitle: 'Set consultation fees and rates',
-          onTap: () => _showPricingConfigDialog(),
-        ),
-        _buildListTile(
-          icon: Icons.category,
-          title: 'Legal Categories',
-          subtitle: 'Manage legal practice areas',
-          onTap: () => _showLegalCategoriesDialog(),
-        ),
-        _buildListTile(
-          icon: Icons.location_city,
-          title: 'Cities Management',
-          subtitle: 'Add or remove cities',
-          onTap: () => _showCitiesManagementDialog(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReportsSection() {
-    return _buildSection(
-      title: 'Reports & Analytics',
-      children: [
-        _buildListTile(
-          icon: Icons.analytics,
-          title: 'Generate Report',
-          subtitle: 'Create detailed platform reports',
-          onTap: () => _showGenerateReportDialog(),
-        ),
-        _buildListTile(
-          icon: Icons.download,
-          title: 'Export Data',
-          subtitle: 'Export user and consultation data',
-          onTap: () => _showExportDataDialog(),
-        ),
-        _buildListTile(
-          icon: Icons.trending_up,
-          title: 'Performance Metrics',
-          subtitle: 'View platform performance',
-          onTap: () => _showPerformanceMetricsDialog(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDangerZoneSection() {
-    return _buildSection(
-      title: 'Danger Zone',
-      children: [
-        _buildListTile(
-          icon: Icons.delete_forever,
-          title: 'Delete All Data',
-          subtitle: 'Permanently delete all platform data',
-          onTap: () => _showDeleteAllDataDialog(),
-          textColor: Colors.red,
-        ),
-        _buildListTile(
-          icon: Icons.restore,
-          title: 'Reset Platform',
-          subtitle: 'Reset platform to default settings',
-          onTap: () => _showResetPlatformDialog(),
-          textColor: Colors.orange,
-        ),
-        _buildListTile(
-          icon: Icons.logout,
-          title: 'Logout',
-          subtitle: 'Sign out of admin account',
-          onTap: _logout,
-          textColor: Colors.orange,
         ),
       ],
     );
@@ -1845,7 +1710,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  // Admin Settings Dialogs
   void _showAddAdminDialog() {
     final nameController = TextEditingController();
     final emailController = TextEditingController();
@@ -3341,109 +3205,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ],
       ),
     );
-  }
-
-  // Comprehensive seed all data
-  Future<void> _seedAllData() async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Seeding all data...'),
-            ],
-          ),
-        ),
-      );
-
-      // Seed users first
-      await UserSeedService.seedUserData();
-
-      // Seed lawyer details
-      await _lawyerService.seedLawyerDetails();
-
-      // Seed reviews for each lawyer
-      final lawyers = await _lawyerService.getVerifiedLawyers();
-      for (var lawyer in lawyers) {
-        await _reviewService.seedSampleReviews(lawyer.id);
-      }
-
-      // Seed consultations
-      await UserSeedService.seedConsultationData();
-
-      // Seed chats
-      await UserSeedService.seedChatData();
-
-      Navigator.pop(context); // Close loading dialog
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '🎉 All data seeded successfully! Users, Lawyers, Reviews, Consultations & Chats',
-          ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 4),
-        ),
-      );
-    } catch (e) {
-      Navigator.pop(context); // Close loading dialog
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error seeding all data: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _seedLawyerData() async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Seeding lawyer data...'),
-            ],
-          ),
-        ),
-      );
-
-      // Seed lawyer details
-      await _lawyerService.seedLawyerDetails();
-
-      // Seed reviews for each lawyer
-      final lawyers = await _lawyerService.getVerifiedLawyers();
-      for (var lawyer in lawyers) {
-        await _reviewService.seedSampleReviews(lawyer.id);
-      }
-
-      Navigator.pop(context); // Close loading dialog
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Lawyer data and reviews seeded successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      Navigator.pop(context); // Close loading dialog
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error seeding data: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 
   Future<void> _logout() async {

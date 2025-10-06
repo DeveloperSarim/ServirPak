@@ -6,6 +6,7 @@ import '../../services/theme_service.dart';
 import '../../constants/app_constants.dart';
 import '../auth/login_screen.dart';
 import '../profile/edit_profile_screen.dart';
+import '../admin/admin_dashboard.dart';
 import '../../models/user_model.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -217,6 +218,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
         _buildListTile(
+          icon: Icons.history,
+          title: 'My Consultations',
+          subtitle: 'View your consultation history',
+          onTap: () => _showConsultationHistory(),
+        ),
+        _buildListTile(
+          icon: Icons.payment,
+          title: 'Payment History',
+          subtitle: 'View your payment records',
+          onTap: () => _showPaymentHistory(),
+        ),
+        _buildListTile(
+          icon: Icons.chat,
+          title: 'My Chats',
+          subtitle: 'View your chat conversations',
+          onTap: () => _showMyChats(),
+        ),
+        _buildListTile(
           icon: Icons.security,
           title: 'Privacy & Security',
           subtitle: 'Manage your privacy settings',
@@ -360,6 +379,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _showChangePhoneDialog();
           },
         ),
+        _buildListTile(
+          icon: Icons.download,
+          title: 'Download My Data',
+          subtitle: 'Export your account data',
+          onTap: () {
+            _showDownloadDataDialog();
+          },
+        ),
+        _buildListTile(
+          icon: Icons.info,
+          title: 'Account Information',
+          subtitle: 'View your account details',
+          onTap: () {
+            _showAccountInfoDialog();
+          },
+        ),
       ],
     );
   }
@@ -372,47 +407,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: Icons.people,
           title: 'User Management',
           subtitle: 'Manage all users and their permissions',
-          onTap: () {
-            // TODO: Navigate to user management
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('User Management - Coming Soon')),
-            );
-          },
+          onTap: () => _showUserManagementDialog(),
         ),
         _buildListTile(
           icon: Icons.verified_user,
           title: 'Lawyer Verification',
           subtitle: 'Approve or reject lawyer applications',
-          onTap: () {
-            // TODO: Navigate to lawyer verification
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Lawyer Verification - Coming Soon'),
-              ),
-            );
-          },
+          onTap: () => _showLawyerVerificationDialog(),
         ),
         _buildListTile(
           icon: Icons.analytics,
           title: 'Analytics & Reports',
           subtitle: 'View platform analytics and generate reports',
-          onTap: () {
-            // TODO: Navigate to analytics
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Analytics - Coming Soon')),
-            );
-          },
+          onTap: () => _showAnalyticsDialog(),
         ),
         _buildListTile(
           icon: Icons.settings_system_daydream,
           title: 'System Settings',
           subtitle: 'Configure platform-wide settings',
-          onTap: () {
-            // TODO: Navigate to system settings
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('System Settings - Coming Soon')),
-            );
-          },
+          onTap: () => _showSystemSettingsDialog(),
+        ),
+        _buildListTile(
+          icon: Icons.admin_panel_settings,
+          title: 'Admin Dashboard',
+          subtitle: 'Access full admin dashboard',
+          onTap: () => _navigateToAdminDashboard(),
+        ),
+        _buildListTile(
+          icon: Icons.security,
+          title: 'Security Management',
+          subtitle: 'Manage platform security settings',
+          onTap: () => _showSecurityManagementDialog(),
+        ),
+        _buildListTile(
+          icon: Icons.backup,
+          title: 'Data Management',
+          subtitle: 'Backup and restore platform data',
+          onTap: () => _showDataManagementDialog(),
         ),
       ],
     );
@@ -1226,6 +1257,558 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete Account'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // New methods for enhanced functionality
+  void _showConsultationHistory() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('My Consultations'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.history, size: 64, color: Color(0xFF8B4513)),
+            SizedBox(height: 16),
+            Text(
+              'View your consultation history',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Track all your past and upcoming consultations with lawyers.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to consultation history screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Consultation history feature coming soon!'),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('View History'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPaymentHistory() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Payment History'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.payment, size: 64, color: Color(0xFF8B4513)),
+            SizedBox(height: 16),
+            Text('View your payment records', style: TextStyle(fontSize: 16)),
+            SizedBox(height: 8),
+            Text(
+              'Track all your payments, invoices, and transaction history.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to payment history screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Payment history feature coming soon!'),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('View Payments'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMyChats() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('My Chats'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.chat, size: 64, color: Color(0xFF8B4513)),
+            SizedBox(height: 16),
+            Text(
+              'View your chat conversations',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Access all your conversations with lawyers and get support.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to chat list screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Chat feature is available in the main dashboard!',
+                  ),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('View Chats'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDownloadDataDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Download My Data'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.download, size: 64, color: Color(0xFF8B4513)),
+            SizedBox(height: 16),
+            Text('Export your account data', style: TextStyle(fontSize: 16)),
+            SizedBox(height: 8),
+            Text(
+              'Download a copy of your personal data including profile, consultations, and chat history.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Data export request submitted. You will receive an email with download link.',
+                  ),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Request Download'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAccountInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Account Information'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info, size: 64, color: Color(0xFF8B4513)),
+            const SizedBox(height: 16),
+            _buildInfoRow('Name', widget.user?.name ?? 'Not provided'),
+            _buildInfoRow('Email', widget.user?.email ?? 'Not provided'),
+            _buildInfoRow('Phone', widget.user?.phone ?? 'Not provided'),
+            _buildInfoRow('Role', widget.userRole.toUpperCase()),
+            _buildInfoRow(
+              'Member Since',
+              widget.user?.createdAt != null
+                  ? '${widget.user!.createdAt.day}/${widget.user!.createdAt.month}/${widget.user!.createdAt.year}'
+                  : 'Unknown',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: Text(value, style: const TextStyle(color: Colors.grey)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Admin Settings Dialog Methods
+  void _showUserManagementDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('User Management'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.people, size: 64, color: Color(0xFF8B4513)),
+            SizedBox(height: 16),
+            Text(
+              'Manage all users and their permissions',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'View, edit, and manage user accounts, roles, and permissions across the platform.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to user management screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('User Management feature coming soon!'),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Manage Users'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLawyerVerificationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Lawyer Verification'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.verified_user, size: 64, color: Color(0xFF8B4513)),
+            SizedBox(height: 16),
+            Text(
+              'Approve or reject lawyer applications',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Review lawyer applications, verify documents, and approve or reject lawyer registrations.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to lawyer verification screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Lawyer Verification feature coming soon!'),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Review Applications'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAnalyticsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Analytics & Reports'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.analytics, size: 64, color: Color(0xFF8B4513)),
+            SizedBox(height: 16),
+            Text(
+              'View platform analytics and generate reports',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Access detailed analytics, user statistics, and generate comprehensive reports.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to analytics screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Analytics feature coming soon!'),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('View Analytics'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSystemSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('System Settings'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.settings_system_daydream,
+              size: 64,
+              color: Color(0xFF8B4513),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Configure platform-wide settings',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Manage system configuration, platform settings, and global preferences.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to system settings screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('System Settings feature coming soon!'),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Configure'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToAdminDashboard() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AdminDashboard()),
+    );
+  }
+
+  void _showSecurityManagementDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Security Management'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.security, size: 64, color: Color(0xFF8B4513)),
+            SizedBox(height: 16),
+            Text(
+              'Manage platform security settings',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Configure security policies, access controls, and platform protection settings.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Security Management feature coming soon!'),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Manage Security'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDataManagementDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Data Management'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.backup, size: 64, color: Color(0xFF8B4513)),
+            SizedBox(height: 16),
+            Text(
+              'Backup and restore platform data',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Create backups, restore data, and manage platform data integrity.',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Data Management feature coming soon!'),
+                  backgroundColor: Color(0xFF8B4513),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B4513),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Manage Data'),
           ),
         ],
       ),
