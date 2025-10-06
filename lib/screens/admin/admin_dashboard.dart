@@ -358,39 +358,43 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 2.2,
-              children: [
-                _buildStatCard(
-                  'Total Users',
-                  totalUsers.toString(),
-                  Icons.people,
-                  Colors.blue,
-                ),
-                _buildStatCard(
-                  'Admins',
-                  adminCount.toString(),
-                  Icons.admin_panel_settings,
-                  Colors.red,
-                ),
-                _buildStatCard(
-                  'Lawyers',
-                  lawyerCount.toString(),
-                  Icons.gavel,
-                  Colors.green,
-                ),
-                _buildStatCard(
-                  'Clients',
-                  userCount.toString(),
-                  Icons.person,
-                  Colors.orange,
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: constraints.maxWidth > 400 ? 3.0 : 2.5,
+                  children: [
+                    _buildStatCard(
+                      'Total Users',
+                      totalUsers.toString(),
+                      Icons.people,
+                      Colors.blue,
+                    ),
+                    _buildStatCard(
+                      'Admins',
+                      adminCount.toString(),
+                      Icons.admin_panel_settings,
+                      Colors.red,
+                    ),
+                    _buildStatCard(
+                      'Lawyers',
+                      lawyerCount.toString(),
+                      Icons.gavel,
+                      Colors.green,
+                    ),
+                    _buildStatCard(
+                      'Clients',
+                      userCount.toString(),
+                      Icons.person,
+                      Colors.orange,
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 24),
             _buildAnalyticsSection(),
@@ -441,39 +445,43 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 2.2,
-              children: [
-                _buildStatCard(
-                  'Total Consultations',
-                  totalConsultations.toString(),
-                  Icons.assignment,
-                  const Color(0xFF8B4513),
-                ),
-                _buildStatCard(
-                  'Completed',
-                  completedConsultations.toString(),
-                  Icons.check_circle,
-                  Colors.green,
-                ),
-                _buildStatCard(
-                  'Pending',
-                  pendingConsultations.toString(),
-                  Icons.pending,
-                  Colors.orange,
-                ),
-                _buildStatCard(
-                  'Accepted',
-                  acceptedConsultations.toString(),
-                  Icons.thumb_up,
-                  Colors.blue,
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: constraints.maxWidth > 400 ? 3.0 : 2.5,
+                  children: [
+                    _buildStatCard(
+                      'Total Consultations',
+                      totalConsultations.toString(),
+                      Icons.assignment,
+                      const Color(0xFF8B4513),
+                    ),
+                    _buildStatCard(
+                      'Completed',
+                      completedConsultations.toString(),
+                      Icons.check_circle,
+                      Colors.green,
+                    ),
+                    _buildStatCard(
+                      'Pending',
+                      pendingConsultations.toString(),
+                      Icons.pending,
+                      Colors.orange,
+                    ),
+                    _buildStatCard(
+                      'Accepted',
+                      acceptedConsultations.toString(),
+                      Icons.thumb_up,
+                      Colors.blue,
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
             Container(
@@ -548,15 +556,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -564,12 +572,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 24, color: color),
-          const SizedBox(height: 6),
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 3),
           Text(
             value,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -577,13 +585,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 1),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 9,
               color: Colors.grey,
-              height: 1.1,
+              height: 1.0,
             ),
             textAlign: TextAlign.center,
             maxLines: 2,
