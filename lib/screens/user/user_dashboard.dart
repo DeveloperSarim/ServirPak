@@ -14,7 +14,7 @@ import '../auth/login_screen.dart';
 import 'user_chat_list_screen.dart';
 import 'user_chat_screen.dart';
 import '../profile/user_profile_screen.dart';
-import 'simple_booking_screen.dart';
+import 'lawyer_booking_screen.dart';
 import 'lawyer_list_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
 import 'working_booking_demo.dart';
@@ -1119,29 +1119,17 @@ class _UserDashboardState extends State<UserDashboard> {
                           createdAt: DateTime.now(),
                         );
 
-                        // Get current user
-                        UserModel? currentUser = await _getCurrentUser();
-
-                        if (currentUser != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SimpleBookingScreen(
-                                lawyer: lawyerModel,
-                                user: currentUser,
-                              ),
+                        // Navigate to booking screen (same as lawyer list)
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LawyerBookingScreen(
+                              lawyerId:
+                                  data['userId'] as String? ?? 'lawyer_$index',
+                              lawyerData: data,
                             ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Please login to book consultation',
-                              ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
+                          ),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF8B4513),
@@ -1445,29 +1433,18 @@ class _UserDashboardState extends State<UserDashboard> {
                             createdAt: DateTime.now(),
                           );
 
-                          // Get current user
-                          UserModel? currentUser = await _getCurrentUser();
-
-                          if (currentUser != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SimpleBookingScreen(
-                                  lawyer: lawyerModel,
-                                  user: currentUser,
-                                ),
+                          // Navigate to booking screen (same as lawyer list)
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LawyerBookingScreen(
+                                lawyerId:
+                                    data['userId'] as String? ??
+                                    'lawyer_$index',
+                                lawyerData: data,
                               ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Please login to book consultation',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(
