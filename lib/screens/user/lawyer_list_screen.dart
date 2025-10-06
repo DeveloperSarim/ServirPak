@@ -526,55 +526,151 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
               ),
             ],
 
-            // Action Buttons
+            // Action Buttons - Responsive Layout
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _viewLawyerDetails(lawyerId, data),
-                    icon: const Icon(Icons.info_outline, size: 16),
-                    label: const Text('View Details'),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF8B4513)),
-                      foregroundColor: const Color(0xFF8B4513),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            // Use responsive layout based on screen width
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // If screen is too narrow, stack buttons vertically
+                if (constraints.maxWidth < 400) {
+                  return Column(
+                    children: [
+                      // View Details Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _viewLawyerDetails(lawyerId, data),
+                          icon: const Icon(Icons.info_outline, size: 16),
+                          label: const Text('View Details'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF8B4513)),
+                            foregroundColor: const Color(0xFF8B4513),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _startChatWithLawyer(lawyerId, data),
-                    icon: const Icon(Icons.chat, size: 16),
-                    label: const Text('Chat'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 8),
+                      // Chat and Book buttons in a row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () =>
+                                  _startChatWithLawyer(lawyerId, data),
+                              icon: const Icon(Icons.chat, size: 16),
+                              label: const Text('Chat'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _bookLawyer(lawyerId, data),
+                              icon: const Icon(Icons.book_online, size: 16),
+                              label: const Text('Book'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8B4513),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _bookLawyer(lawyerId, data),
-                    icon: const Icon(Icons.book_online, size: 16),
-                    label: const Text('Book'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B4513),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    ],
+                  );
+                } else {
+                  // For wider screens, use horizontal layout with flexible sizing
+                  return Row(
+                    children: [
+                      // View Details - flexible width
+                      Flexible(
+                        flex: 2,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _viewLawyerDetails(lawyerId, data),
+                          icon: const Icon(Icons.info_outline, size: 16),
+                          label: const Text('View Details'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF8B4513)),
+                            foregroundColor: const Color(0xFF8B4513),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-              ],
+                      const SizedBox(width: 8),
+                      // Chat - fixed width
+                      Flexible(
+                        flex: 1,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _startChatWithLawyer(lawyerId, data),
+                          icon: const Icon(Icons.chat, size: 16),
+                          label: const Text('Chat'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Book - fixed width
+                      Flexible(
+                        flex: 1,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _bookLawyer(lawyerId, data),
+                          icon: const Icon(Icons.book_online, size: 16),
+                          label: const Text('Book'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF8B4513),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
           ],
         ),
