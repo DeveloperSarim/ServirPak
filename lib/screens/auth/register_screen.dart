@@ -108,9 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              _selectedRole == AppConstants.adminRole
-                  ? 'Account created successfully!'
-                  : _selectedRole == AppConstants.lawyerRole
+              _selectedRole == AppConstants.lawyerRole
                   ? 'Account created! Now complete your lawyer profile.'
                   : 'Account created successfully! You can now login.',
             ),
@@ -118,11 +116,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
 
-        if (_selectedRole == AppConstants.adminRole) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
-        } else if (_selectedRole == AppConstants.lawyerRole) {
+        if (_selectedRole == AppConstants.lawyerRole) {
           // Get selected city name
           String cityName = _cities
               .firstWhere((city) => city.id == _selectedCity)
@@ -180,7 +174,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Account'),
+        title: const Text(
+          'Create Account',
+          style: TextStyle(
+            color: const Color(0xFF8B4513), // dark color
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: const Color(0xFF8B4513), // Saddle Brown
@@ -382,10 +381,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       value: AppConstants.lawyerRole,
                       child: const Text('Lawyer'),
                     ),
-                    DropdownMenuItem(
-                      value: AppConstants.adminRole,
-                      child: const Text('Admin'),
-                    ),
                   ],
                   onChanged: (value) {
                     setState(() {
@@ -492,7 +487,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const CircularProgressIndicator(
+                          color: Color.fromARGB(255, 27, 27, 27),
+                        )
                       : const Text(
                           'Create Account',
                           style: TextStyle(
