@@ -30,6 +30,10 @@ class _LawyerProfileManagementScreenState
   // For web compatibility
   Uint8List? _profileImageBytes;
 
+  // Real-time statistics
+  int _actualConsultationCount = 0;
+  double _actualRating = 0.0;
+
   // Cities list
   List<String> _cities = [];
   String? _selectedCity;
@@ -62,6 +66,14 @@ class _LawyerProfileManagementScreenState
     super.initState();
     _loadLawyerData();
     _loadCities();
+    _loadRealTimeStats();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh stats when screen becomes active
+    _loadRealTimeStats();
   }
 
   Future<void> _loadCities() async {
@@ -75,6 +87,74 @@ class _LawyerProfileManagementScreenState
       print('🏙️ Loaded ${_cities.length} cities');
     } catch (e) {
       print('❌ Error loading cities: $e');
+    }
+  }
+
+  Future<void> _loadRealTimeStats() async {
+    try {
+      final session = await AuthService.getSavedUserSession();
+      String userId = session['userId'] as String;
+
+      // Load consultation count
+      QuerySnapshot consultationsSnapshot = await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .where('lawyerId', isEqualTo: userId)
+          .get();
+
+      setState(() {
+        _actualConsultationCount = consultationsSnapshot.docs.length;
+      });
+
+      // Load reviews and calculate rating
+      QuerySnapshot reviewsSnapshot = await _firestore
+          .collection(AppConstants.reviewsCollection)
+          .where('lawyerId', isEqualTo: userId)
+          .get();
+
+      if (reviewsSnapshot.docs.isNotEmpty) {
+        double totalRating = 0.0;
+        for (var doc in reviewsSnapshot.docs) {
+          Map<String, dynamic> reviewData = doc.data() as Map<String, dynamic>;
+          totalRating += (reviewData['rating'] ?? 0.0).toDouble();
+        }
+        double averageRating = totalRating / reviewsSnapshot.docs.length;
+
+        setState(() {
+          _actualRating = double.parse(averageRating.toStringAsFixed(1));
+        });
+      } else {
+        setState(() {
+          _actualRating = 0.0;
+        });
+      }
+
+      print('📊 Real-time stats loaded:');
+      print('📊 Consultations: $_actualConsultationCount');
+      print('📊 Rating: $_actualRating');
+
+      // Update lawyer document with real stats
+      await _updateLawyerStats();
+    } catch (e) {
+      print('❌ Error loading real-time stats: $e');
+    }
+  }
+
+  Future<void> _updateLawyerStats() async {
+    try {
+      if (_currentLawyer != null) {
+        await _firestore
+            .collection(AppConstants.lawyersCollection)
+            .doc(_currentLawyer!.id)
+            .update({
+              'totalCases': _actualConsultationCount,
+              'rating': _actualRating,
+              'updatedAt': Timestamp.now(),
+            });
+
+        print('✅ Updated lawyer stats in database');
+      }
+    } catch (e) {
+      print('❌ Error updating lawyer stats: $e');
     }
   }
 
@@ -446,6 +526,15 @@ class _LawyerProfileManagementScreenState
         elevation: 0,
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Color(0xFF8B4513)),
+            onPressed: () async {
+              setState(() => _isLoading = true);
+              await _loadRealTimeStats();
+              await _loadLawyerData();
+              setState(() => _isLoading = false);
+            },
+          ),
           if (!_isEditing)
             IconButton(
               icon: const Icon(Icons.edit, color: Color(0xFF8B4513)),
@@ -518,7 +607,7 @@ class _LawyerProfileManagementScreenState
               const Icon(Icons.star, color: Colors.amber, size: 24),
               const SizedBox(width: 8),
               Text(
-                '${_currentLawyer?.rating ?? 0.0}',
+                '$_actualRating',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -529,7 +618,7 @@ class _LawyerProfileManagementScreenState
               const Icon(Icons.work, color: Colors.white70, size: 24),
               const SizedBox(width: 8),
               Text(
-                '${_currentLawyer?.totalCases ?? 0} Consultations',
+                '$_actualConsultationCount Consultations',
                 style: const TextStyle(fontSize: 18, color: Colors.white70),
               ),
             ],
@@ -798,17 +887,13 @@ class _LawyerProfileManagementScreenState
           ),
           Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.3)),
           Expanded(
-            child: _buildStatItem(
-              'Rating',
-              '${_currentLawyer?.rating ?? 0.0}',
-              Icons.star,
-            ),
+            child: _buildStatItem('Rating', '$_actualRating', Icons.star),
           ),
           Container(width: 1, height: 40, color: Colors.grey.withOpacity(0.3)),
           Expanded(
             child: _buildStatItem(
               'Consultations',
-              '${_currentLawyer?.totalCases ?? 0}',
+              '$_actualConsultationCount',
               Icons.gavel,
             ),
           ),
