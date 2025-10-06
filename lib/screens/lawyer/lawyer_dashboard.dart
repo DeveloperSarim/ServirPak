@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+import '../../services/realtime_chat_service.dart';
 import '../../constants/app_constants.dart';
 import '../../models/lawyer_model.dart';
 import '../../models/consultation_model.dart';
+import '../../models/user_model.dart';
+import '../../models/chat_model.dart';
 import '../auth/login_screen.dart';
 import 'lawyer_analytics_screen.dart';
 import 'lawyer_schedule_screen.dart';
 import 'lawyer_client_search_screen.dart';
 import 'lawyer_chat_list_screen.dart';
 import 'lawyer_consultations_screen.dart';
-import '../../utils/firebase_setup_helper.dart';
+import 'lawyer_chat_screen.dart';
 import '../../utils/responsive_helper.dart';
 import '../../services/demo_data_service.dart';
 import 'lawyer_profile_management_screen.dart';
@@ -128,12 +131,7 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
         return Scaffold(
           body: const LawyerChatListScreen(),
           floatingActionButton: FloatingActionButton(
-            onPressed: () async {
-              await FirebaseSetupHelper.setupDemoChatData();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Demo chat created!')),
-              );
-            },
+            onPressed: () => _showStartChatModal(),
             backgroundColor: const Color(0xFF8B4513),
             child: const Icon(Icons.add, color: Colors.white),
           ),
@@ -1491,5 +1489,215 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
         ),
       );
     }
+  }
+
+  // Show modal to start chat with users
+  Future<void> _showStartChatModal() async {
+    try {
+      // Get all users from Firebase
+      QuerySnapshot usersSnapshot = await _firestore
+          .collection(AppConstants.usersCollection)
+          .get();
+
+      List<UserModel> users = usersSnapshot.docs
+          .map((doc) => UserModel.fromFirestore(doc))
+          .toList();
+
+      if (mounted) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Header
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Start New Chat',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF8B4513),
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                // Users list
+                Expanded(
+                  child: users.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No users available',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: users.length,
+                          itemBuilder: (context, index) {
+                            UserModel user = users[index];
+                            return _buildUserChatCard(user);
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading users: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildUserChatCard(UserModel user) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: CircleAvatar(
+          radius: 25,
+          backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
+          backgroundImage:
+              user.profileImage != null && user.profileImage!.isNotEmpty
+              ? NetworkImage(user.profileImage!)
+              : null,
+          child: user.profileImage == null || user.profileImage!.isEmpty
+              ? const Icon(Icons.person, color: Color(0xFF8B4513))
+              : null,
+        ),
+        title: Text(
+          user.name,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+        subtitle: Text(
+          user.email,
+          style: const TextStyle(color: Colors.grey, fontSize: 14),
+        ),
+        trailing: ElevatedButton(
+          onPressed: () => _startChatWithUser(user),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF8B4513),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+          child: const Text('Chat'),
+        ),
+        onTap: () => _startChatWithUser(user),
+      ),
+    );
+  }
+
+  Future<void> _startChatWithUser(UserModel user) async {
+    try {
+      Navigator.pop(context); // Close modal
+
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Get current lawyer
+      final session = await AuthService.getSavedUserSession();
+      String lawyerId = session['userId'] as String;
+
+      // Create chat
+      await RealtimeChatService.createChatRealtime(
+        lawyerId: lawyerId,
+        userId: user.id,
+      );
+
+      // Get lawyer data
+      DocumentSnapshot lawyerDoc = await _firestore
+          .collection(AppConstants.lawyersCollection)
+          .doc(lawyerId)
+          .get();
+
+      if (lawyerDoc.exists) {
+        Map<String, dynamic> lawyerData =
+            lawyerDoc.data() as Map<String, dynamic>;
+
+        // Create ChatModel
+        ChatModel chat = ChatModel(
+          id: _generateChatId(lawyerId, user.id),
+          lawyerId: lawyerId,
+          lawyerName: lawyerData['name'] ?? 'Lawyer',
+          lawyerEmail: lawyerData['email'] ?? '',
+          lawyerProfileImage: lawyerData['profileImage'],
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          userProfileImage: user.profileImage,
+          createdAt: DateTime.now(),
+          consultationIds: [],
+        );
+
+        Navigator.pop(context); // Close loading
+
+        // Navigate to chat
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => LawyerChatScreen(chat: chat)),
+        );
+      }
+    } catch (e) {
+      Navigator.pop(context); // Close loading
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start chat: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _generateChatId(String lawyerId, String userId) {
+    List<String> ids = [lawyerId, userId];
+    ids.sort();
+    return '${ids[0]}_${ids[1]}';
   }
 }

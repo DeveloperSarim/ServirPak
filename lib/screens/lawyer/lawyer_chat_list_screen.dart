@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/realtime_chat_service.dart';
 import '../../models/chat_model.dart';
+import '../../models/user_model.dart';
+import '../../constants/app_constants.dart';
 import 'lawyer_chat_screen.dart';
 
 class LawyerChatListScreen extends StatefulWidget {
@@ -15,6 +18,7 @@ class LawyerChatListScreen extends StatefulWidget {
 class _LawyerChatListScreenState extends State<LawyerChatListScreen> {
   late Stream<List<ChatModel>> _chatsStream;
   String? _currentLawyerId;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
