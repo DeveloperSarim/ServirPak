@@ -837,8 +837,9 @@ class _UserDashboardState extends State<UserDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Title and filters in a responsive layout
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
                 'Qualified Lawyers',
@@ -848,48 +849,63 @@ class _UserDashboardState extends State<UserDashboard> {
                   color: Colors.black,
                 ),
               ),
-              Row(
-                children: [
-                  _buildFilterChip('All', true),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Top Rated', false),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Featured', false),
-                ],
+              const SizedBox(height: 12),
+              // Responsive filter chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip('All', true),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('Top Rated', false),
+                    const SizedBox(width: 8),
+                    _buildFilterChip('Featured', false),
+                  ],
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 200,
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection(AppConstants.lawyersCollection)
-                  .where('status', isEqualTo: AppConstants.verifiedStatus)
-                  .limit(5)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+          // Responsive lawyer cards
+          StreamBuilder<QuerySnapshot>(
+            stream: _firestore
+                .collection(AppConstants.lawyersCollection)
+                .where('status', isEqualTo: AppConstants.verifiedStatus)
+                .limit(5)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                if (snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text('No verified lawyers available'),
-                  );
-                }
-
-                return ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    final doc = snapshot.data!.docs[index];
-                    final data = doc.data() as Map<String, dynamic>;
-                    return _buildLawyerCard(data, index);
-                  },
+              if (snapshot.data!.docs.isEmpty) {
+                return const Center(
+                  child: Text('No verified lawyers available'),
                 );
-              },
-            ),
+              }
+
+              // Use responsive grid layout instead of horizontal scroll
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: MediaQuery.of(context).size.width > 600
+                      ? 2
+                      : 1,
+                  childAspectRatio: MediaQuery.of(context).size.width > 600
+                      ? 1.2
+                      : 2.5,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: snapshot.data!.docs.length,
+                itemBuilder: (context, index) {
+                  final doc = snapshot.data!.docs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  return _buildResponsiveLawyerCard(data, index);
+                },
+              );
+            },
           ),
         ],
       ),
@@ -902,213 +918,191 @@ class _UserDashboardState extends State<UserDashboard> {
         _handleFilterChipTap(label);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF8B4513) : Colors.transparent,
+          color: isSelected ? const Color(0xFF8B4513) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFF8B4513) : Colors.grey,
+            color: isSelected ? const Color(0xFF8B4513) : Colors.grey.shade300,
+            width: 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF8B4513).withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+            color: isSelected ? Colors.white : Colors.grey.shade700,
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLawyerCard(Map<String, dynamic> data, int index) {
+  Widget _buildResponsiveLawyerCard(Map<String, dynamic> data, int index) {
     return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Lawyer Image and Info Row
+            Row(
+              children: [
+                // Lawyer Image
+                Container(
+                  height: 60,
+                  width: 60,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B4513).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: Builder(
+                      builder: (context) {
+                        final profileImage = data['profileImage'] as String?;
+                        if (profileImage != null && profileImage.isNotEmpty) {
+                          return Image.network(
+                            profileImage,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF8B4513),
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.person,
+                                size: 30,
+                                color: Color(0xFF8B4513),
+                              );
+                            },
+                          );
+                        } else {
+                          return const Icon(
+                            Icons.person,
+                            size: 30,
+                            color: Color(0xFF8B4513),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Lawyer Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data['name'] as String? ?? 'Lawyer Name',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        data['specialization'] as String? ??
+                            'Law Specialization',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _viewLawyerDetails(data, index),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF8B4513)),
+                      foregroundColor: const Color(0xFF8B4513),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    child: const Text(
+                      'Details',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      // Navigate to booking screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LawyerBookingScreen(
+                            lawyerId:
+                                data['userId'] as String? ?? 'lawyer_$index',
+                            lawyerData: data,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B4513),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    child: const Text(
+                      'Book',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Lawyer Image
-              Container(
-                height: 80,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8B4513).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Builder(
-                    builder: (context) {
-                      final profileImage = data['profileImage'] as String?;
-                      print(
-                        '🔍 UserDashboard: Lawyer ${data['name']} - ProfileImage: $profileImage',
-                      );
-
-                      if (profileImage != null && profileImage.isNotEmpty) {
-                        return Image.network(
-                          profileImage,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(
-                              child: CircularProgressIndicator(
-                                color: Color(0xFF8B4513),
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            print(
-                              '❌ UserDashboard: Error loading image for ${data['name']}: $error',
-                            );
-                            return const Icon(
-                              Icons.person,
-                              size: 40,
-                              color: Color(0xFF8B4513),
-                            );
-                          },
-                        );
-                      } else {
-                        print(
-                          '⚠️ UserDashboard: No profile image for ${data['name']}',
-                        );
-                        return const Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Color(0xFF8B4513),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Lawyer Name
-              Text(
-                data['name'] as String? ?? 'Laura Parker',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              // Specialization
-              Text(
-                data['specialization'] as String? ?? 'Advertising Law | Medica',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const Spacer(),
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => _viewLawyerDetails(data, index),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF8B4513)),
-                        foregroundColor: const Color(0xFF8B4513),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      child: const Text(
-                        'Details',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        // Create lawyer model from Firestore data
-                        LawyerModel lawyerModel = LawyerModel(
-                          id: data['id'] as String? ?? 'lawyer_$index',
-                          userId: data['userId'] as String? ?? 'lawyer_$index',
-                          email:
-                              data['email'] as String? ?? 'lawyer@servipak.com',
-                          name: data['name'] as String? ?? 'Unknown Lawyer',
-                          phone: data['phone'] as String? ?? '+92-300-0000000',
-                          status:
-                              data['status'] as String? ??
-                              AppConstants.verifiedStatus,
-                          specialization:
-                              data['specialization'] as String? ??
-                              'General Practice',
-                          experience:
-                              data['experience'] as String? ?? '0 years',
-                          barCouncilNumber:
-                              data['barCouncilNumber'] as String? ??
-                              'BC-2023-000',
-                          bio: data['bio'] as String? ?? 'Experienced lawyer',
-                          rating: data['rating'] as double? ?? 0.0,
-                          totalCases: data['totalCases'] as int? ?? 0,
-                          languages: List<String>.from(
-                            data['languages'] as List? ?? ['Urdu', 'English'],
-                          ),
-                          address:
-                              data['address'] as String? ??
-                              'Address not provided',
-                          city: data['city'] as String? ?? 'Unknown',
-                          province: data['province'] as String? ?? 'Unknown',
-                          createdAt: DateTime.now(),
-                        );
-
-                        // Navigate to booking screen (same as lawyer list)
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => LawyerBookingScreen(
-                              lawyerId:
-                                  data['userId'] as String? ?? 'lawyer_$index',
-                              lawyerData: data,
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B4513),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      child: const Text(
-                        'Book',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
       ),
     );
