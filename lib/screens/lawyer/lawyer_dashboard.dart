@@ -9,8 +9,6 @@ import '../../models/user_model.dart';
 import '../../models/chat_model.dart';
 import '../auth/login_screen.dart';
 import 'lawyer_analytics_screen.dart';
-import 'lawyer_schedule_screen.dart';
-import 'lawyer_client_search_screen.dart';
 import 'lawyer_chat_list_screen.dart';
 import 'lawyer_consultations_screen.dart';
 import 'lawyer_chat_screen.dart';
@@ -571,85 +569,51 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
           ),
         ),
         const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: ResponsiveHelper.isMobile(context) ? 2 : 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.1,
+        Row(
           children: [
-            _buildActionCard(
-              'Schedule Meeting',
-              Icons.calendar_today,
-              const Color(0xFF8B4513),
+            Expanded(
+              child: _buildActionCard(
+                'My Consultations',
+                Icons.folder,
+                const Color(0xFF8B4513),
+                () => setState(() => _selectedIndex = 1),
+              ),
             ),
-            _buildActionCard(
-              'Client Search',
-              Icons.search,
-              const Color(0xFFA0522D),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionCard(
+                'Messages',
+                Icons.message,
+                const Color(0xFF1E88E5),
+                () => setState(() => _selectedIndex = 2),
+              ),
             ),
-            _buildActionCard('Case Notes', Icons.note, const Color(0xFF2E8B57)),
-            _buildActionCard('Billing', Icons.payment, const Color(0xFFD4AF37)),
-            _buildActionCard(
-              'Analytics',
-              Icons.analytics,
-              const Color(0xFF8B4513),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionCard(
+                'Profile',
+                Icons.person,
+                const Color(0xFFA0522D),
+                () => setState(() => _selectedIndex = 3),
+              ),
             ),
-            _buildActionCard(
-              'Messages',
-              Icons.message,
-              const Color(0xFF1E88E5),
-            ),
-            _buildConsultationActionCard(),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildActionCard(String title, IconData icon, Color color) {
+  Widget _buildActionCard(
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () {
-          if (title == 'Analytics') {
-            _navigateToAnalytics();
-          } else if (title == 'Messages') {
-            setState(() => _selectedIndex = 2);
-          } else if (title == 'Schedule Meeting') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LawyerScheduleScreen(),
-              ),
-            );
-          } else if (title == 'Client Search') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LawyerClientSearchScreen(),
-              ),
-            );
-          } else if (title == 'Case Notes') {
-            _showCaseNotesDialog();
-          } else if (title == 'Billing') {
-            _showBillingDialog();
-          } else if (title == 'Consultations') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LawyerConsultationsScreen(),
-              ),
-            );
-          } else {
-            // Handle other actions
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('$title functionality coming soon!')),
-            );
-          }
-        },
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
