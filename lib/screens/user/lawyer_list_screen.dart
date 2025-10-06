@@ -692,6 +692,11 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
       String lawyerEmail = data['email'] as String? ?? 'lawyer@servipak.com';
       String? lawyerProfileImage = data['profileImage'] as String?;
 
+      // Debug: Print lawyer profile image
+      print(
+        '🔍 LawyerListScreen: Lawyer ${lawyerName} - ProfileImage: $lawyerProfileImage',
+      );
+
       // Create or get existing chat
       await RealtimeChatService.createChatRealtime(
         lawyerId: lawyerId,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
-import '../../services/chat_service.dart';
 import '../../services/realtime_chat_service.dart';
 import '../../models/chat_model.dart';
 import '../../widgets/chat_bubble.dart';
@@ -182,12 +181,43 @@ class _UserChatScreenState extends State<UserChatScreen> {
             CircleAvatar(
               radius: 18,
               backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
-              backgroundImage: widget.chat.lawyerProfileImage != null
-                  ? NetworkImage(widget.chat.lawyerProfileImage!)
-                  : null,
-              child: widget.chat.lawyerProfileImage == null
-                  ? const Icon(Icons.person, color: Color(0xFF8B4513), size: 20)
-                  : null,
+              child:
+                  widget.chat.lawyerProfileImage != null &&
+                      widget.chat.lawyerProfileImage!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        widget.chat.lawyerProfileImage!,
+                        width: 36,
+                        height: 36,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Icon(
+                            Icons.person,
+                            color: Color(0xFF8B4513),
+                            size: 20,
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          print(
+                            '❌ Error loading lawyer profile image in app bar: $error',
+                          );
+                          print(
+                            '❌ Image URL: ${widget.chat.lawyerProfileImage}',
+                          );
+                          return const Icon(
+                            Icons.person,
+                            color: Color(0xFF8B4513),
+                            size: 20,
+                          );
+                        },
+                      ),
+                    )
+                  : const Icon(
+                      Icons.person,
+                      color: Color(0xFF8B4513),
+                      size: 20,
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -357,16 +387,43 @@ class _UserChatScreenState extends State<UserChatScreen> {
               CircleAvatar(
                 radius: 16,
                 backgroundColor: const Color(0xFF8B4513).withOpacity(0.1),
-                backgroundImage: widget.chat.lawyerProfileImage != null
-                    ? NetworkImage(widget.chat.lawyerProfileImage!)
-                    : null,
-                child: widget.chat.lawyerProfileImage == null
-                    ? const Icon(
+                child:
+                    widget.chat.lawyerProfileImage != null &&
+                        widget.chat.lawyerProfileImage!.isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          widget.chat.lawyerProfileImage!,
+                          width: 32,
+                          height: 32,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Icon(
+                              Icons.person,
+                              color: Color(0xFF8B4513),
+                              size: 16,
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            print(
+                              '❌ Error loading lawyer profile image: $error',
+                            );
+                            print(
+                              '❌ Image URL: ${widget.chat.lawyerProfileImage}',
+                            );
+                            return const Icon(
+                              Icons.person,
+                              color: Color(0xFF8B4513),
+                              size: 16,
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(
                         Icons.person,
                         color: Color(0xFF8B4513),
                         size: 16,
-                      )
-                    : null,
+                      ),
               ),
               const SizedBox(width: 8),
               Expanded(

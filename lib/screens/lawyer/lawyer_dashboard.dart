@@ -6,7 +6,6 @@ import '../../models/lawyer_model.dart';
 import '../../models/consultation_model.dart';
 import '../auth/login_screen.dart';
 import 'lawyer_analytics_screen.dart';
-import 'lawyer_documents_screen.dart';
 import 'lawyer_schedule_screen.dart';
 import 'lawyer_client_search_screen.dart';
 import 'lawyer_chat_list_screen.dart';
@@ -15,7 +14,6 @@ import '../../utils/firebase_setup_helper.dart';
 import '../../utils/responsive_helper.dart';
 import '../../services/demo_data_service.dart';
 import 'lawyer_profile_management_screen.dart';
-import 'lawyer_profile_completion_screen.dart';
 
 class LawyerDashboard extends StatefulWidget {
   const LawyerDashboard({super.key});
@@ -114,7 +112,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             label: 'Consultations',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
-          BottomNavigationBarItem(icon: Icon(Icons.upload), label: 'Documents'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
@@ -142,8 +139,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
           ),
         );
       case 3:
-        return const LawyerDocumentsScreen();
-      case 4:
         return _buildProfile();
       default:
         return _buildMainDashboard();
@@ -226,55 +221,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
                 ),
               );
             },
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Color(0xFF8B4513)),
-            onSelected: (value) {
-              if (value == 'add_demo_data') {
-                _addDemoData();
-              } else if (value == 'clear_demo_data') {
-                _clearDemoData();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'add_demo_data',
-                child: Row(
-                  children: [
-                    Icon(Icons.add_circle, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Add Demo Data'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'clear_demo_data',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_sweep, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Clear Demo Data'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: const Color(0xFF8B4513),
-              backgroundImage: _currentLawyer?.profileImage?.isNotEmpty == true
-                  ? NetworkImage(_currentLawyer!.profileImage!)
-                  : null,
-              child: _currentLawyer?.profileImage?.isNotEmpty != true
-                  ? const Icon(Icons.person, color: Colors.white, size: 24)
-                  : null,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: Color(0xFF8B4513)),
-            onPressed: _logout,
           ),
         ],
       ),
@@ -653,11 +599,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
               const Color(0xFF8B4513),
             ),
             _buildActionCard(
-              'Documents',
-              Icons.folder,
-              const Color(0xFFA0522D),
-            ),
-            _buildActionCard(
               'Messages',
               Icons.message,
               const Color(0xFF1E88E5),
@@ -677,8 +618,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
         onTap: () {
           if (title == 'Analytics') {
             _navigateToAnalytics();
-          } else if (title == 'Documents') {
-            setState(() => _selectedIndex = 3);
           } else if (title == 'Messages') {
             setState(() => _selectedIndex = 2);
           } else if (title == 'Schedule Meeting') {

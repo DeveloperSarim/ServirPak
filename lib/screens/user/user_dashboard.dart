@@ -2452,6 +2452,11 @@ class _UserDashboardState extends State<UserDashboard> {
           lawyerData['email'] as String? ?? 'lawyer@servipak.com';
       String? lawyerProfileImage = lawyerData['profileImage'] as String?;
 
+      // Debug: Print lawyer profile image
+      print(
+        '🔍 UserDashboard: Lawyer ${lawyerName} - ProfileImage: $lawyerProfileImage',
+      );
+
       // Create or get existing chat
       await RealtimeChatService.createChatRealtime(
         lawyerId: lawyerId,

@@ -9,6 +9,7 @@ import '../../services/cloudinary_service.dart';
 import '../../config/cloudinary_config.dart';
 import '../../constants/app_constants.dart';
 import '../../models/lawyer_model.dart';
+import '../auth/login_screen.dart';
 
 class LawyerProfileManagementScreen extends StatefulWidget {
   const LawyerProfileManagementScreen({super.key});
@@ -553,6 +554,10 @@ class _LawyerProfileManagementScreenState
                 _populateFormFields(); // Reset form
               },
             ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            onPressed: _logout,
+          ),
         ],
       ),
       body: _isLoading
@@ -1280,5 +1285,25 @@ class _LawyerProfileManagementScreenState
         ],
       ),
     );
+  }
+
+  Future<void> _logout() async {
+    try {
+      await AuthService.signOut();
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

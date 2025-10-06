@@ -105,12 +105,18 @@ class RealtimeChatService {
           lawyerDoc.data() as Map<String, dynamic>;
       Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
 
+      // Debug: Print lawyer profile image from database
+      String? lawyerProfileImage = lawyerData['profileImage'];
+      print(
+        '🔍 RealtimeChatService: Lawyer ${lawyerData['name']} - ProfileImage from DB: $lawyerProfileImage',
+      );
+
       ChatModel chat = ChatModel(
         id: chatId,
         lawyerId: lawyerId,
         lawyerName: lawyerData['name'] ?? '',
         lawyerEmail: lawyerData['email'] ?? '',
-        lawyerProfileImage: lawyerData['profileImage'],
+        lawyerProfileImage: lawyerProfileImage,
         userId: userId,
         userName: userData['name'] ?? '',
         userEmail: userData['email'] ?? '',
