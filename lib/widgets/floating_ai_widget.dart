@@ -241,7 +241,8 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     });
 
     try {
-      final response = await AIService.getLegalAdvice(text);
+      // Use the new lawyer suggestion service
+      final response = await AIService.handleLawyerSuggestion(text);
       _addMessage(response, isUser: false);
     } catch (e) {
       _addMessage(

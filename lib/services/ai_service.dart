@@ -1,6 +1,9 @@
 import 'package:flutter/services.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../config/ai_config.dart';
+import 'lawyer_suggestion_service.dart';
+import '../models/lawyer_model.dart';
+import '../models/case_info_model.dart';
 
 class AIService {
   static GenerativeModel? _model;
@@ -271,5 +274,291 @@ If no relevant articles are found, state that clearly.
       return 'Constitution text not loaded';
     }
     return 'AI Service ready';
+  }
+
+  // Handle lawyer suggestion requests
+  static Future<String> handleLawyerSuggestion(String userQuestion) async {
+    try {
+      // Check if user is asking about finding a lawyer
+      final question = userQuestion.toLowerCase();
+      if (question.contains('lawyer') ||
+          question.contains('advocate') ||
+          question.contains('attorney') ||
+          question.contains('legal help') ||
+          question.contains('chaiye') ||
+          question.contains('چاہیے') ||
+          question.contains('وکیل') ||
+          question.contains('lawyer chaiye') ||
+          question.contains('advocate chaiye')) {
+        // Extract case information from the question
+        final caseInfo = await _extractCaseInfo(userQuestion);
+
+        if (caseInfo != null) {
+          // Search for lawyers based on case information
+          final lawyers = await LawyerSuggestionService.findLawyersForCase(
+            caseType: caseInfo.caseType,
+            city: caseInfo.city,
+            specialization: caseInfo.specialization,
+            experience: caseInfo.experience,
+            budget: caseInfo.budget,
+          );
+
+          if (lawyers.isNotEmpty) {
+            return _formatLawyerSuggestions(lawyers, caseInfo);
+          } else {
+            return '''**No lawyers found** for your specific requirements.
+
+**Suggestions:**
+• Try expanding your search criteria
+• Consider different cities or specializations
+• Contact our support team for assistance
+
+Would you like me to help you refine your search criteria?''';
+          }
+        } else {
+          // If no specific case info, show some general lawyers
+          final generalLawyers =
+              await LawyerSuggestionService.findLawyersForCase(
+                caseType: 'general',
+                city: '',
+                specialization: '',
+                experience: '',
+                budget: '',
+              );
+
+          if (generalLawyers.isNotEmpty) {
+            return '''**I'd be happy to help you find a lawyer!**
+
+Here are some **verified lawyers** from our database:
+
+${_formatGeneralLawyers(generalLawyers)}
+
+**To get more specific recommendations, please tell me:**
+• **What type of case** do you have? (e.g., family law, criminal, civil, etc.)
+• **Which city** are you in?
+• **What's your budget** for consultation?
+
+This will help me find the best lawyers for your specific needs!''';
+          } else {
+            // If no lawyers found, create sample lawyers and try again
+            print('🔍 No lawyers found, creating sample lawyers...');
+            await LawyerSuggestionService.createSampleLawyers();
+
+            // Try to get lawyers again
+            final retryLawyers =
+                await LawyerSuggestionService.findLawyersForCase(
+                  caseType: 'general',
+                  city: '',
+                  specialization: '',
+                  experience: '',
+                  budget: '',
+                );
+
+            if (retryLawyers.isNotEmpty) {
+              return '''**I'd be happy to help you find a lawyer!**
+
+Here are some **verified lawyers** from our database:
+
+${_formatGeneralLawyers(retryLawyers)}
+
+**To get more specific recommendations, please tell me:**
+• **What type of case** do you have? (e.g., family law, criminal, civil, etc.)
+• **Which city** are you in?
+• **What's your budget** for consultation?
+
+This will help me find the best lawyers for your specific needs!''';
+            } else {
+              return '''**I'd be happy to help you find a lawyer!**
+
+To provide the best recommendations, please tell me:
+
+• **What type of case** do you have? (e.g., family law, criminal, civil, etc.)
+• **Which city** are you in?
+• **What's your budget** for consultation?
+• **Any specific requirements** (experience level, specialization)?
+
+Please provide these details and I'll find the best lawyers for you!''';
+            }
+          }
+        }
+      }
+
+      // If not about lawyers, return regular legal advice
+      return await getLegalAdvice(userQuestion);
+    } catch (e) {
+      print('❌ Error handling lawyer suggestion: $e');
+      return 'Sorry, I encountered an error while searching for lawyers. Please try again.';
+    }
+  }
+
+  // Extract case information from user question
+  static Future<CaseInfo?> _extractCaseInfo(String userQuestion) async {
+    try {
+      final prompt =
+          '''
+Analyze this user question and extract case information. The user may be asking in English, Urdu, or mixed language:
+
+User Question: $userQuestion
+
+Extract the following information if mentioned:
+- Case type (e.g., family law, criminal, civil, property, divorce, marriage, etc.)
+- City/location (e.g., Karachi, Lahore, Islamabad, etc.)
+- Budget/consultation fee
+- Experience level needed
+- Specialization required
+- Urgency level
+
+Common Urdu terms:
+- "lawyer chaiye" = need a lawyer
+- "family law" = family matters, divorce, marriage
+- "criminal law" = criminal cases, theft, assault
+- "property law" = property disputes, land issues
+
+If the user hasn't provided enough information, return null.
+If they have provided sufficient information, return a structured response with the details.
+
+Format your response as:
+CASE_TYPE: [type]
+CITY: [city]
+BUDGET: [budget]
+EXPERIENCE: [experience]
+SPECIALIZATION: [specialization]
+URGENCY: [urgency]
+''';
+
+      final content = [Content.text(prompt)];
+      final response = await _model!.generateContent(content);
+      final responseText = response.text ?? '';
+
+      // Parse the response to extract case information
+      return _parseCaseInfo(responseText);
+    } catch (e) {
+      print('❌ Error extracting case info: $e');
+      return null;
+    }
+  }
+
+  // Parse case information from AI response
+  static CaseInfo? _parseCaseInfo(String response) {
+    try {
+      final lines = response.split('\n');
+      String caseType = '';
+      String city = '';
+      String budget = '';
+      String experience = '';
+      String specialization = '';
+      String urgency = '';
+
+      for (final line in lines) {
+        if (line.startsWith('CASE_TYPE:')) {
+          caseType = line.substring(10).trim();
+        } else if (line.startsWith('CITY:')) {
+          city = line.substring(5).trim();
+        } else if (line.startsWith('BUDGET:')) {
+          budget = line.substring(7).trim();
+        } else if (line.startsWith('EXPERIENCE:')) {
+          experience = line.substring(11).trim();
+        } else if (line.startsWith('SPECIALIZATION:')) {
+          specialization = line.substring(15).trim();
+        } else if (line.startsWith('URGENCY:')) {
+          urgency = line.substring(8).trim();
+        }
+      }
+
+      // Check if we have minimum required information
+      if (caseType.isNotEmpty && city.isNotEmpty) {
+        return CaseInfo(
+          caseType: caseType,
+          description: 'User case description',
+          city: city,
+          urgency: urgency.isNotEmpty ? urgency : 'normal',
+          budget: budget.isNotEmpty ? budget : 'flexible',
+          experience: experience.isNotEmpty ? experience : 'any',
+          specialization: specialization.isNotEmpty
+              ? specialization
+              : 'general',
+          contactPreference: 'any',
+        );
+      }
+
+      return null;
+    } catch (e) {
+      print('❌ Error parsing case info: $e');
+      return null;
+    }
+  }
+
+  // Format lawyer suggestions
+  static String _formatLawyerSuggestions(
+    List<LawyerModel> lawyers,
+    CaseInfo caseInfo,
+  ) {
+    final buffer = StringBuffer();
+
+    buffer.writeln('**🏛️ Recommended Lawyers for Your Case**\n');
+    buffer.writeln('**Case Type:** ${caseInfo.caseType}');
+    buffer.writeln('**Location:** ${caseInfo.city}\n');
+
+    for (int i = 0; i < lawyers.length; i++) {
+      final lawyer = lawyers[i];
+      buffer.writeln('**${i + 1}. ${lawyer.name}**');
+      buffer.writeln('• **Specialization:** ${lawyer.specialization}');
+      buffer.writeln('• **Experience:** ${lawyer.experience} years');
+      buffer.writeln(
+        '• **Rating:** ${lawyer.rating?.toStringAsFixed(1) ?? 'N/A'}/5.0',
+      );
+      buffer.writeln('• **Total Cases:** ${lawyer.totalCases ?? 0}');
+
+      if (lawyer.consultationFee != null) {
+        buffer.writeln('• **Consultation Fee:** Rs. ${lawyer.consultationFee}');
+      }
+
+      if (lawyer.city != null) {
+        buffer.writeln('• **Location:** ${lawyer.city}');
+      }
+
+      if (lawyer.bio != null && lawyer.bio!.isNotEmpty) {
+        buffer.writeln('• **Bio:** ${lawyer.bio}');
+      }
+
+      buffer.writeln('• **Contact:** ${lawyer.phone}');
+      buffer.writeln('');
+    }
+
+    buffer.writeln('**💡 Next Steps:**');
+    buffer.writeln('• Contact the lawyers directly using their phone numbers');
+    buffer.writeln('• Schedule consultations to discuss your case');
+    buffer.writeln('• Ask about their experience with similar cases');
+    buffer.writeln('• Inquire about fees and payment terms');
+
+    return buffer.toString();
+  }
+
+  // Format general lawyers list
+  static String _formatGeneralLawyers(List<LawyerModel> lawyers) {
+    final buffer = StringBuffer();
+
+    for (int i = 0; i < lawyers.length && i < 3; i++) {
+      final lawyer = lawyers[i];
+      buffer.writeln('**${i + 1}. ${lawyer.name}**');
+      buffer.writeln('• **Specialization:** ${lawyer.specialization}');
+      buffer.writeln('• **Experience:** ${lawyer.experience} years');
+      buffer.writeln(
+        '• **Rating:** ${lawyer.rating?.toStringAsFixed(1) ?? 'N/A'}/5.0',
+      );
+
+      if (lawyer.city != null) {
+        buffer.writeln('• **Location:** ${lawyer.city}');
+      }
+
+      if (lawyer.consultationFee != null) {
+        buffer.writeln('• **Consultation Fee:** Rs. ${lawyer.consultationFee}');
+      }
+
+      buffer.writeln('• **Contact:** ${lawyer.phone}');
+      buffer.writeln('');
+    }
+
+    return buffer.toString();
   }
 }
