@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import '../services/ai_service.dart';
 
 class FloatingAIWidget extends StatefulWidget {
@@ -150,11 +149,21 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   bool _isInitialized = false;
+  static List<ChatMessage> _persistentMessages =
+      []; // Static to persist across widget rebuilds
 
   @override
   void initState() {
     super.initState();
     _initializeAI();
+    _loadPersistentMessages();
+  }
+
+  void _loadPersistentMessages() {
+    setState(() {
+      _messages.clear();
+      _messages.addAll(_persistentMessages);
+    });
   }
 
   Future<void> _initializeAI() async {
@@ -164,11 +173,13 @@ class _AIChatWidgetState extends State<AIChatWidget> {
         _isInitialized = true;
       });
 
-      // Add welcome message
-      _addMessage(
-        'Welcome! I\'m your AI legal assistant. I can help you with questions about Pakistani law and the Constitution. How can I assist you today?',
-        isUser: false,
-      );
+      // Add welcome message only if no messages exist
+      if (_persistentMessages.isEmpty) {
+        _addMessage(
+          'Welcome! I\'m your AI legal assistant. I can help you with questions about Pakistani law and the Constitution. How can I assist you today?',
+          isUser: false,
+        );
+      }
     } catch (e) {
       setState(() {
         _isInitialized = false;
@@ -188,10 +199,20 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   }
 
   void _addMessage(String text, {required bool isUser}) {
+    final message = ChatMessage(
+      text: text,
+      isUser: isUser,
+      timestamp: DateTime.now(),
+    );
+
     setState(() {
-      _messages.add(
-        ChatMessage(text: text, isUser: isUser, timestamp: DateTime.now()),
-      );
+      _messages.add(message);
+      _persistentMessages.add(message); // Add to persistent list
+
+      // Limit persistent messages to last 50 to avoid memory issues
+      if (_persistentMessages.length > 50) {
+        _persistentMessages.removeAt(0);
+      }
     });
     _scrollToBottom();
   }
@@ -237,6 +258,7 @@ class _AIChatWidgetState extends State<AIChatWidget> {
   void _clearChat() {
     setState(() {
       _messages.clear();
+      _persistentMessages.clear(); // Clear persistent list too
     });
     _addMessage(
       'Chat cleared. How can I help you with Pakistani law today?',
@@ -284,23 +306,48 @@ class _AIChatWidgetState extends State<AIChatWidget> {
                 ),
               ),
               if (_isInitialized)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Online',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Online',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (_persistentMessages.length > 1) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${_persistentMessages.length - 1}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 )
               else
                 Container(
@@ -476,13 +523,13 @@ class _AIChatWidgetState extends State<AIChatWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    message.text,
-                    style: TextStyle(
-                      color: message.isUser ? Colors.white : Colors.black87,
-                      fontSize: 14,
-                    ),
-                  ),
+                  if (message.isUser)
+                    Text(
+                      message.text,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    )
+                  else
+                    _buildFormattedText(message.text),
                   const SizedBox(height: 4),
                   Text(
                     _formatTime(message.timestamp),
@@ -530,6 +577,155 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     } else {
       return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
     }
+  }
+
+  Widget _buildFormattedText(String text) {
+    return RichText(text: _parseMarkdown(text));
+  }
+
+  TextSpan _parseMarkdown(String text) {
+    final List<TextSpan> spans = [];
+    final RegExp boldRegex = RegExp(r'\*\*(.*?)\*\*');
+    final RegExp italicRegex = RegExp(r'\*(.*?)\*');
+    final RegExp bulletRegex = RegExp(r'^•\s*(.*)$', multiLine: true);
+
+    int currentIndex = 0;
+
+    // Split by lines to handle bullet points
+    final lines = text.split('\n');
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+
+      if (line.trim().isEmpty) {
+        spans.add(const TextSpan(text: '\n'));
+        continue;
+      }
+
+      // Check if it's a bullet point
+      if (bulletRegex.hasMatch(line)) {
+        final match = bulletRegex.firstMatch(line);
+        if (match != null) {
+          spans.add(
+            TextSpan(
+              text: '• ',
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+          spans.add(_parseInlineMarkdown(match.group(1) ?? ''));
+          if (i < lines.length - 1) {
+            spans.add(const TextSpan(text: '\n'));
+          }
+          continue;
+        }
+      }
+
+      // Regular line with inline formatting
+      spans.add(_parseInlineMarkdown(line));
+      if (i < lines.length - 1) {
+        spans.add(const TextSpan(text: '\n'));
+      }
+    }
+
+    return TextSpan(children: spans);
+  }
+
+  TextSpan _parseInlineMarkdown(String text) {
+    final List<TextSpan> spans = [];
+    int currentIndex = 0;
+
+    // Process text character by character to handle bold and italic
+    while (currentIndex < text.length) {
+      // Check for bold pattern **text**
+      if (currentIndex + 1 < text.length &&
+          text[currentIndex] == '*' &&
+          text[currentIndex + 1] == '*') {
+        // Find the closing **
+        int endIndex = currentIndex + 2;
+        while (endIndex + 1 < text.length) {
+          if (text[endIndex] == '*' && text[endIndex + 1] == '*') {
+            // Found bold text
+            final boldText = text.substring(currentIndex + 2, endIndex);
+            spans.add(
+              TextSpan(
+                text: boldText,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            );
+            currentIndex = endIndex + 2;
+            break;
+          }
+          endIndex++;
+        }
+        if (endIndex + 1 >= text.length) {
+          // No closing ** found, treat as regular text
+          spans.add(
+            TextSpan(
+              text: text.substring(currentIndex, currentIndex + 2),
+              style: const TextStyle(color: Colors.black87, fontSize: 14),
+            ),
+          );
+          currentIndex += 2;
+        }
+      }
+      // Check for italic pattern *text*
+      else if (text[currentIndex] == '*' &&
+          (currentIndex == 0 || text[currentIndex - 1] != '*') &&
+          (currentIndex + 1 >= text.length || text[currentIndex + 1] != '*')) {
+        // Find the closing *
+        int endIndex = currentIndex + 1;
+        while (endIndex < text.length) {
+          if (text[endIndex] == '*' &&
+              (endIndex + 1 >= text.length || text[endIndex + 1] != '*')) {
+            // Found italic text
+            final italicText = text.substring(currentIndex + 1, endIndex);
+            spans.add(
+              TextSpan(
+                text: italicText,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            );
+            currentIndex = endIndex + 1;
+            break;
+          }
+          endIndex++;
+        }
+        if (endIndex >= text.length) {
+          // No closing * found, treat as regular text
+          spans.add(
+            TextSpan(
+              text: text[currentIndex],
+              style: const TextStyle(color: Colors.black87, fontSize: 14),
+            ),
+          );
+          currentIndex++;
+        }
+      }
+      // Regular character
+      else {
+        spans.add(
+          TextSpan(
+            text: text[currentIndex],
+            style: const TextStyle(color: Colors.black87, fontSize: 14),
+          ),
+        );
+        currentIndex++;
+      }
+    }
+
+    return TextSpan(children: spans);
   }
 }
 

@@ -73,11 +73,18 @@ $constitutionContext
 
 USER QUESTION: $userQuestion
 
-Please provide a comprehensive legal response based on Pakistani law. Include:
-1. Relevant constitutional articles (if available)
-2. Legal interpretation
-3. Practical implications
-4. Any limitations or disclaimers
+Please provide a comprehensive legal response based on Pakistani law. Format your response using markdown:
+- Use **bold** for important terms and concepts
+- Use *italic* for emphasis
+- Use bullet points (•) for lists
+- Use numbered lists for steps or procedures
+- Use clear headings and structure
+
+Include:
+1. **Relevant constitutional articles** (if available)
+2. **Legal interpretation**
+3. **Practical implications**
+4. **Any limitations or disclaimers**
 
 Keep your response clear, accurate, and helpful. If the question is not related to Pakistani law, politely redirect the user to ask about Pakistani legal matters.
 ''';
