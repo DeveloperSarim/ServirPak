@@ -18,6 +18,7 @@ import 'lawyer_booking_screen.dart';
 import 'lawyer_list_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
 import 'working_booking_demo.dart';
+import '../../widgets/floating_ai_widget.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -63,7 +64,7 @@ class _UserDashboardState extends State<UserDashboard> {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: _buildAppBar(),
       drawer: _buildDrawer(),
-      body: _buildBody(),
+      body: Stack(children: [_buildBody(), const FloatingAIWidget()]),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
