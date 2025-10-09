@@ -18,6 +18,8 @@ class LawyerConsultationsScreen extends StatefulWidget {
 
 class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TextEditingController _cancellationReasonController =
+      TextEditingController();
   String _selectedFilter = 'All';
   bool _isLoading = true;
 
@@ -27,6 +29,12 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
     setState(() {
       _isLoading = false;
     });
+  }
+
+  @override
+  void dispose() {
+    _cancellationReasonController.dispose();
+    super.dispose();
   }
 
   @override
@@ -478,6 +486,36 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
               overflow: TextOverflow.ellipsis,
             ),
 
+            // Cancellation Reason (if exists)
+            if (consultation.cancellationReason != null &&
+                consultation.cancellationReason!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.cancel, color: Colors.red, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Cancelled: ${consultation.cancellationReason}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.red,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 12),
 
             // Details Row
@@ -578,6 +616,26 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF8B4513),
                         foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
+                // Cancel Button for Pending/Accepted consultations
+                if (consultation.status == AppConstants.pendingStatus ||
+                    consultation.status == 'accepted') ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showCancellationDialog(consultation),
+                      icon: const Icon(Icons.cancel, size: 16),
+                      label: const Text('Cancel'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange,
+                        side: const BorderSide(color: Colors.orange),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -990,6 +1048,135 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Debug error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Show cancellation dialog
+  void _showCancellationDialog(ConsultationModel consultation) {
+    _cancellationReasonController.clear(); // Clear previous input
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Cancel Consultation'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Please provide a reason for cancelling this consultation:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _cancellationReasonController,
+                decoration: const InputDecoration(
+                  hintText: 'Enter cancellation reason (required)',
+                  border: OutlineInputBorder(),
+                  labelText: 'Reason',
+                ),
+                maxLines: 3,
+                maxLength: 200,
+              ),
+              if (consultation.type == 'paid') ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info, color: Colors.blue, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Refund of Rs. ${consultation.totalAmount.toStringAsFixed(0)} will be issued to user\'s wallet.',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Back'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text(
+                'Confirm Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
+              onPressed: () async {
+                if (_cancellationReasonController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Cancellation reason cannot be empty.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.of(context).pop(); // Close dialog
+                await _cancelConsultation(
+                  consultation,
+                  _cancellationReasonController.text.trim(),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Method to handle cancellation logic
+  Future<void> _cancelConsultation(
+    ConsultationModel consultation,
+    String reason,
+  ) async {
+    try {
+      // Determine refund amount (only for paid consultations)
+      double refundAmount = 0.0;
+      if (consultation.type == 'paid') {
+        refundAmount = consultation.totalAmount;
+      }
+
+      await ConsultationService.cancelConsultation(
+        consultationId: consultation.id,
+        cancellationReason: reason,
+        userId: consultation.userId,
+        refundAmount: refundAmount,
+        paymentId: consultation.paymentId ?? 'N/A', // Pass paymentId
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Consultation cancelled successfully! ${refundAmount > 0 ? 'Refund of Rs. ${refundAmount.toStringAsFixed(0)} issued to user\'s wallet.' : ''}',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('❌ Error cancelling consultation: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to cancel consultation: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/consultation_model.dart';
 import '../constants/app_constants.dart';
+import 'user_wallet_service.dart';
 
 class ConsultationService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -279,6 +280,77 @@ class ConsultationService {
     } catch (e) {
       print('Error getting all consultations: $e');
       return [];
+    }
+  }
+
+  // Cancel consultation and issue refund
+  static Future<void> cancelConsultation({
+    required String consultationId,
+    required String cancellationReason,
+    required String userId,
+    required double refundAmount,
+    required String paymentId,
+  }) async {
+    try {
+      print('📅 Starting consultation cancellation...');
+      print('📅 Consultation ID: $consultationId');
+      print('📅 User ID: $userId');
+      print('📅 Refund Amount: $refundAmount');
+      print('📅 Cancellation Reason: $cancellationReason');
+
+      await _firestore.runTransaction((transaction) async {
+        final consultationRef = _firestore
+            .collection(AppConstants.consultationsCollection)
+            .doc(consultationId);
+        final consultationDoc = await transaction.get(consultationRef);
+
+        if (!consultationDoc.exists) {
+          throw Exception('Consultation not found!');
+        }
+
+        final currentConsultation = ConsultationModel.fromFirestore(
+          consultationDoc,
+        );
+
+        if (currentConsultation.status == AppConstants.cancelledStatus ||
+            currentConsultation.status == AppConstants.completedStatus ||
+            currentConsultation.status == AppConstants.rejectedStatus) {
+          throw Exception(
+            'Consultation cannot be cancelled in ${currentConsultation.status} status.',
+          );
+        }
+
+        // 1. Update consultation status and add cancellation reason
+        transaction.update(consultationRef, {
+          'status': AppConstants.cancelledStatus,
+          'cancellationReason': cancellationReason,
+          'updatedAt': Timestamp.now(),
+        });
+        print('✅ Consultation $consultationId status updated to cancelled.');
+
+        // 2. Issue refund to user's wallet
+        // Only refund if it was a paid consultation
+        if (currentConsultation.type == 'paid' && refundAmount > 0) {
+          await UserWalletService.addFundsToWallet(
+            userId: userId,
+            amount: refundAmount,
+            transactionType: 'refund',
+            consultationId: consultationId,
+            reason: 'Consultation cancelled by lawyer: $cancellationReason',
+            paymentId: paymentId, // Link to the original payment
+          );
+          print('✅ Refund of Rs. $refundAmount issued to user $userId wallet.');
+        } else {
+          print(
+            'ℹ️ No refund issued for consultation $consultationId (type: ${currentConsultation.type}, amount: $refundAmount).',
+          );
+        }
+      });
+
+      print('✅ Consultation cancellation completed successfully!');
+    } catch (e) {
+      print('❌ Error cancelling consultation: $e');
+      rethrow;
     }
   }
 

@@ -15,6 +15,7 @@ class AppConstants {
   static const String verifiedStatus = 'verified';
   static const String confirmedStatus = 'confirmed';
   static const String completedStatus = 'completed';
+  static const String cancelledStatus = 'cancelled';
   static const String failedStatus = 'failed';
   static const String refundedStatus = 'refunded';
 
@@ -30,6 +31,8 @@ class AppConstants {
   static const String chatCollection = 'chats';
   static const String paymentsCollection = 'payments';
   static const String reviewsCollection = 'reviews';
+  static const String userWalletsCollection = 'user_wallets';
+  static const String walletTransactionsCollection = 'wallet_transactions';
 
   // Shared Preferences Keys
   static const String isFirstTimeKey = 'is_first_time';

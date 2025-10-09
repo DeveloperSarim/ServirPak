@@ -20,6 +20,7 @@ class ConsultationModel {
   final DateTime? completedAt;
   final String? notes;
   final String? paymentId;
+  final String? cancellationReason; // New field for cancellation reason
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -42,6 +43,7 @@ class ConsultationModel {
     this.completedAt,
     this.notes,
     this.paymentId,
+    this.cancellationReason,
     required this.createdAt,
     this.updatedAt,
   });
@@ -70,6 +72,7 @@ class ConsultationModel {
           : null,
       notes: data['notes'],
       paymentId: data['paymentId'],
+      cancellationReason: data['cancellationReason'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
@@ -98,6 +101,7 @@ class ConsultationModel {
           : null,
       'notes': notes,
       'paymentId': paymentId,
+      'cancellationReason': cancellationReason,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
     };
@@ -122,6 +126,7 @@ class ConsultationModel {
     DateTime? completedAt,
     String? notes,
     String? paymentId,
+    String? cancellationReason,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -144,6 +149,7 @@ class ConsultationModel {
       completedAt: completedAt ?? this.completedAt,
       notes: notes ?? this.notes,
       paymentId: paymentId ?? this.paymentId,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
