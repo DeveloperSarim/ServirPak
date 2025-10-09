@@ -21,30 +21,19 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
 
   // Form controllers
   final _descriptionController = TextEditingController();
-  final _categoryController = TextEditingController();
   final _dateController = TextEditingController();
   final _timeController = TextEditingController();
 
   // State variables
-  String _selectedCategory = 'General';
+  String _selectedCategory =
+      'General'; // Will be updated with lawyer's specialization
   String _consultationFee = 'PKR 5000';
   String _platformFee = 'PKR 250';
   String _totalAmount = 'PKR 5250';
   String _officeHours = 'Mon-Fri 9:00 AM - 6:00 PM';
   bool _isLoading = false;
 
-  // Categories
-  final List<String> _categories = [
-    'General',
-    'Criminal Law',
-    'Family Law',
-    'Property Law',
-    'Business Law',
-    'Tax Law',
-    'Labor Law',
-    'Immigration Law',
-    'Intellectual Property',
-  ];
+  // Categories removed - now using lawyer's specialization
 
   // Time slots
   final List<String> _timeSlots = [
@@ -68,6 +57,12 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
 
   Future<void> _loadLawyerDetails() async {
     try {
+      // Set lawyer's specialization as category
+      setState(() {
+        _selectedCategory =
+            widget.lawyerData['specialization'] ?? 'General Law';
+      });
+
       // Get consultation fee
       double fee = await ConsultationBookingService.getLawyerConsultationFee(
         widget.lawyerId,
@@ -165,7 +160,9 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 1)),
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
+      lastDate: DateTime.now().add(
+        const Duration(days: 120),
+      ), // 4 months (120 days)
     );
 
     if (picked != null) {
@@ -378,9 +375,11 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Category Dropdown
-            DropdownButtonFormField<String>(
-              value: _selectedCategory,
+            // Lawyer's Category (Read-only)
+            TextFormField(
+              readOnly: true,
+              initialValue:
+                  widget.lawyerData['specialization'] ?? 'General Law',
               decoration: InputDecoration(
                 labelText: 'Category',
                 prefixIcon: const Icon(
@@ -401,18 +400,9 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
                     width: 2,
                   ),
                 ),
+                filled: true,
+                fillColor: Colors.grey.withOpacity(0.1),
               ),
-              items: _categories.map((String category) {
-                return DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(category),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedCategory = newValue!;
-                });
-              },
             ),
             const SizedBox(height: 16),
 
@@ -721,7 +711,6 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
   @override
   void dispose() {
     _descriptionController.dispose();
-    _categoryController.dispose();
     _dateController.dispose();
     _timeController.dispose();
     super.dispose();
