@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
 import '../../services/consultation_booking_service.dart';
+import 'payment_screen.dart';
 
 class LawyerBookingScreen extends StatefulWidget {
   final String lawyerId;
@@ -26,7 +26,6 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
   final _timeController = TextEditingController();
 
   // State variables
-  String _selectedType = 'paid';
   String _selectedCategory = 'General';
   String _consultationFee = 'PKR 5000';
   String _platformFee = 'PKR 250';
@@ -202,48 +201,34 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
   Future<void> _bookConsultation() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Navigate to payment screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PaymentScreen(
+          lawyerName: widget.lawyerData['name'] ?? 'Unknown Lawyer',
+          lawyerSpecialization:
+              widget.lawyerData['specialization'] ?? 'General Law',
+          consultationFee: _getNumericFee(_consultationFee),
+          platformFee: _getNumericFee(_platformFee),
+          totalAmount: _getNumericFee(_totalAmount),
+          consultationDate: _dateController.text,
+          consultationTime: _timeController.text,
+          description: _descriptionController.text,
+          category: _selectedCategory,
+        ),
+      ),
+    );
+  }
+
+  double _getNumericFee(String feeString) {
     try {
-      setState(() => _isLoading = true);
-
-      // Get current user
-      final session = await AuthService.getSavedUserSession();
-      String userId = session['userId'] as String;
-
-      // Book consultation
-      bool success = await ConsultationBookingService.bookConsultation(
-        userId: userId,
-        lawyerId: widget.lawyerId,
-        consultationType: _selectedType,
-        consultationDate: _dateController.text,
-        consultationTime: _timeController.text,
-        description: _descriptionController.text,
-        category: _selectedCategory,
-      );
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Consultation booked successfully! Check your email for details.',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to book consultation. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      String numericString = feeString
+          .replaceAll('PKR ', '')
+          .replaceAll(',', '');
+      return double.tryParse(numericString) ?? 0.0;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+      return 0.0;
     }
   }
 
@@ -725,7 +710,7 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
                 ],
               )
             : const Text(
-                'Book Consultation',
+                'Proceed to Payment',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
