@@ -6,7 +6,6 @@ import '../../services/demo_data_service.dart';
 import '../../services/realtime_chat_service.dart';
 import '../../constants/app_constants.dart';
 import '../../models/consultation_model.dart';
-import '../../models/lawyer_model.dart';
 import '../../models/user_model.dart';
 import '../../models/chat_model.dart';
 import '../auth/login_screen.dart';
@@ -109,7 +108,7 @@ class _UserDashboardState extends State<UserDashboard> {
                       '🔍 UserDashboard: Profile Image URL: $profileImageUrl',
                     );
                     print(
-                      '🔍 UserDashboard: Profile Image exists: ${profileImageUrl?.isNotEmpty == true}',
+                      '🔍 UserDashboard: Profile Image exists: ${profileImageUrl != null && profileImageUrl.isNotEmpty}',
                     );
 
                     print(
@@ -147,13 +146,16 @@ class _UserDashboardState extends State<UserDashboard> {
                         child: CircleAvatar(
                           radius: 22, // Slightly larger for better visibility
                           backgroundColor: const Color(0xFF8B4513),
-                          backgroundImage: profileImageUrl?.isNotEmpty == true
-                              ? NetworkImage(profileImageUrl!)
+                          backgroundImage:
+                              profileImageUrl != null &&
+                                  profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl)
                               : null, // No image if no profile image
                           onBackgroundImageError: (exception, stackTrace) {
                             print('❌ Error loading profile image: $exception');
                           },
-                          child: profileImageUrl?.isNotEmpty != true
+                          child:
+                              profileImageUrl == null || profileImageUrl.isEmpty
                               ? const Icon(
                                   Icons.person,
                                   color: Colors.white,
@@ -445,10 +447,13 @@ class _UserDashboardState extends State<UserDashboard> {
                                 radius: 15,
                                 backgroundColor: Colors.white.withOpacity(0.2),
                                 backgroundImage:
-                                    profileImageUrl?.isNotEmpty == true
-                                    ? NetworkImage(profileImageUrl!)
+                                    profileImageUrl != null &&
+                                        profileImageUrl.isNotEmpty
+                                    ? NetworkImage(profileImageUrl)
                                     : null,
-                                child: profileImageUrl?.isNotEmpty != true
+                                child:
+                                    profileImageUrl == null ||
+                                        profileImageUrl.isEmpty
                                     ? Icon(
                                         Icons.person,
                                         color: Colors.white,
@@ -779,59 +784,6 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  Widget _buildModernActionCard(String title, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            _handleActionCardTap(title);
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(icon, size: 32, color: color),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C1810),
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildQualifiedLawyersSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -970,19 +922,38 @@ class _UserDashboardState extends State<UserDashboard> {
             // Lawyer Image and Info Row
             Row(
               children: [
-                // Lawyer Image
+                // Lawyer Image with better handling
                 Container(
                   height: 60,
                   width: 60,
                   decoration: BoxDecoration(
                     color: const Color(0xFF8B4513).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: const Color(0xFF8B4513).withOpacity(0.3),
+                      width: 2,
+                    ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(30),
-                    child: Builder(
-                      builder: (context) {
-                        final profileImage = data['profileImage'] as String?;
+                    child: FutureBuilder<String?>(
+                      future: _getLawyerProfileImage(data),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF8B4513),
+                              strokeWidth: 2,
+                            ),
+                          );
+                        }
+
+                        final profileImage = snapshot.data;
+                        print(
+                          '🔍 UserDashboard: Lawyer ${data['name']} - ProfileImage: $profileImage',
+                        );
+
                         if (profileImage != null && profileImage.isNotEmpty) {
                           return Image.network(
                             profileImage,
@@ -997,6 +968,9 @@ class _UserDashboardState extends State<UserDashboard> {
                               );
                             },
                             errorBuilder: (context, error, stackTrace) {
+                              print(
+                                '❌ UserDashboard: Error loading image for ${data['name']}: $error',
+                              );
                               return const Icon(
                                 Icons.person,
                                 size: 30,
@@ -1005,6 +979,9 @@ class _UserDashboardState extends State<UserDashboard> {
                             },
                           );
                         } else {
+                          print(
+                            '⚠️ UserDashboard: No profile image for ${data['name']}',
+                          );
                           return const Icon(
                             Icons.person,
                             size: 30,
@@ -1041,6 +1018,32 @@ class _UserDashboardState extends State<UserDashboard> {
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      // Rating and Experience
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${(data['rating'] as num?)?.toDouble() ?? 0.0}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.work, color: Colors.grey, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${data['experience'] as String? ?? '0'} years',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1109,6 +1112,54 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
+  Future<String?> _getLawyerProfileImage(Map<String, dynamic> data) async {
+    try {
+      // First check if profileImage exists in lawyers collection
+      String? profileImage = data['profileImage'] as String?;
+
+      if (profileImage != null && profileImage.isNotEmpty) {
+        print(
+          '✅ UserDashboard: Found profile image in lawyers collection: $profileImage',
+        );
+        return profileImage;
+      }
+
+      // If not found, check users collection
+      String lawyerId =
+          data['userId'] as String? ?? data['id'] as String? ?? '';
+      if (lawyerId.isNotEmpty) {
+        print(
+          '🔄 UserDashboard: Checking users collection for lawyer: $lawyerId',
+        );
+        DocumentSnapshot userDoc = await _firestore
+            .collection(AppConstants.usersCollection)
+            .doc(lawyerId)
+            .get();
+
+        if (userDoc.exists) {
+          Map<String, dynamic> userData =
+              userDoc.data() as Map<String, dynamic>;
+          String? userProfileImage = userData['profileImage'] as String?;
+
+          if (userProfileImage != null && userProfileImage.isNotEmpty) {
+            print(
+              '✅ UserDashboard: Found profile image in users collection: $userProfileImage',
+            );
+            return userProfileImage;
+          }
+        }
+      }
+
+      print(
+        '⚠️ UserDashboard: No profile image found for lawyer: ${data['name']}',
+      );
+      return null;
+    } catch (e) {
+      print('❌ UserDashboard: Error fetching profile image: $e');
+      return null;
+    }
+  }
+
   Future<void> _viewLawyerDetails(Map<String, dynamic> data, int index) async {
     Navigator.push(
       context,
@@ -1116,59 +1167,6 @@ class _UserDashboardState extends State<UserDashboard> {
         builder: (context) => LawyerDetailsScreen(
           lawyerId: data['id'] as String? ?? 'lawyer_$index',
           lawyerData: data,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModernCategoryCard(String title, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            _handleCategoryCardTap(title);
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(icon, size: 32, color: color),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2C1810),
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );
@@ -1217,209 +1215,6 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLawyerListItem(Map<String, dynamic> data, int index) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () {
-          // Navigate to lawyer details screen
-          final lawyer = LawyerModel(
-            id: data['id'] ?? 'lawyer_$index',
-            userId: data['userId'] ?? 'lawyer_$index',
-            email: data['email'] ?? 'lawyer@servipak.com',
-            name: data['name'] ?? 'Unknown Lawyer',
-            phone: data['phone'] ?? '+92-300-0000000',
-            status: data['status'] ?? AppConstants.verifiedStatus,
-            specialization: data['specialization'] ?? 'General Practice',
-            experience: data['experience'] ?? '0 years',
-            barCouncilNumber: data['barCouncilNumber'] ?? 'BC-2023-000',
-            profileImage: data['profileImage'],
-            bio: data['bio'],
-            education: data['education'],
-            languages: data['languages'],
-            officeAddress: data['officeAddress'],
-            officeHours: data['officeHours'],
-            consultationFee: data['consultationFee'],
-            certifications: data['certifications'],
-            awards: data['awards'],
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => LawyerDetailsScreen(lawyer: lawyer),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.green.withOpacity(0.1),
-                    child: Text(
-                      data['name']?.toString().substring(0, 1).toUpperCase() ??
-                          'L',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data['name'] ?? 'Unknown',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          data['specialization'] ?? 'General Practice',
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 16),
-                          const SizedBox(width: 4),
-                          Text('${data['rating'] ?? 0.0}'),
-                        ],
-                      ),
-                      Text(
-                        '${data['totalCases'] ?? 0} cases',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.location_on, color: Colors.grey, size: 16),
-                  const SizedBox(width: 4),
-                  Text(data['city'] ?? 'Unknown'),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      // Chat Button
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          await _startChatWithLawyer(data, index);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        icon: const Icon(Icons.chat, size: 16),
-                        label: const Text('Chat'),
-                      ),
-                      const SizedBox(width: 8),
-                      // Book Consultation Button
-                      ElevatedButton(
-                        onPressed: () async {
-                          // Create lawyer model from Firestore data
-                          LawyerModel lawyerModel = LawyerModel(
-                            id: data['id'] as String? ?? 'lawyer_$index',
-                            userId:
-                                data['userId'] as String? ?? 'lawyer_$index',
-                            email:
-                                data['email'] as String? ??
-                                'lawyer@servipak.com',
-                            name: data['name'] as String? ?? 'Unknown Lawyer',
-                            phone:
-                                data['phone'] as String? ?? '+92-300-0000000',
-                            status:
-                                data['status'] as String? ??
-                                AppConstants.verifiedStatus,
-                            specialization:
-                                data['specialization'] as String? ??
-                                'General Practice',
-                            experience:
-                                data['experience'] as String? ?? '0 years',
-                            barCouncilNumber:
-                                data['barCouncilNumber'] as String? ??
-                                'BC-2023-000',
-                            bio: data['bio'] as String? ?? 'Experienced lawyer',
-                            rating: data['rating'] as double? ?? 0.0,
-                            totalCases: data['totalCases'] as int? ?? 0,
-                            languages: List<String>.from(
-                              data['languages'] as List? ?? ['Urdu', 'English'],
-                            ),
-                            address:
-                                data['address'] as String? ??
-                                'Address not provided',
-                            city: data['city'] as String? ?? 'Unknown',
-                            province: data['province'] as String? ?? 'Unknown',
-                            createdAt: DateTime.now(),
-                          );
-
-                          // Navigate to booking screen (same as lawyer list)
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LawyerBookingScreen(
-                                lawyerId:
-                                    data['userId'] as String? ??
-                                    'lawyer_$index',
-                                lawyerData: data,
-                              ),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(
-                            0xFF8B4513,
-                          ), // Saddle Brown
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('Book'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1680,57 +1475,6 @@ class _UserDashboardState extends State<UserDashboard> {
     } catch (e) {
       print('❌ Error getting current user: $e');
       return null;
-    }
-  }
-
-  // Action Card Handlers
-  void _handleActionCardTap(String title) {
-    switch (title) {
-      case 'Emergency':
-        _showEmergencyDialog();
-        break;
-      case 'Document Review':
-        _showDocumentReviewDialog();
-        break;
-      case 'Legal Advice':
-        _showLegalAdviceDialog();
-        break;
-      case 'Court Representation':
-        _showCourtRepresentationDialog();
-        break;
-      case 'Contract Review':
-        _showContractReviewDialog();
-        break;
-      case 'Property Law':
-        _showPropertyLawDialog();
-        break;
-      default:
-        _showGenericActionDialog(title);
-    }
-  }
-
-  void _handleCategoryCardTap(String title) {
-    switch (title) {
-      case 'Administrative Law':
-        _showCategoryLawyersDialog(title, 'Administrative Law');
-        break;
-      case 'Cannabis Law':
-        _showCategoryLawyersDialog(title, 'Cannabis Law');
-        break;
-      case 'Commercial Law':
-        _showCategoryLawyersDialog(title, 'Commercial Law');
-        break;
-      case 'Criminal Law':
-        _showCategoryLawyersDialog(title, 'Criminal Law');
-        break;
-      case 'Family Law':
-        _showCategoryLawyersDialog(title, 'Family Law');
-        break;
-      case 'Property Law':
-        _showCategoryLawyersDialog(title, 'Property Law');
-        break;
-      default:
-        _showCategoryLawyersDialog(title, title);
     }
   }
 
@@ -2042,29 +1786,6 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  // Filter Handlers
-  void _handleSpecializationFilter(String? value) {
-    if (value != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Filtering by specialization: $value'),
-          backgroundColor: Colors.blue,
-        ),
-      );
-    }
-  }
-
-  void _handleCityFilter(String? value) {
-    if (value != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Filtering by city: $value'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
   // Chat and Consultation Handlers
   void _openChatWithLawyer(ConsultationModel consultation) {
     showDialog(
@@ -2114,7 +1835,8 @@ class _UserDashboardState extends State<UserDashboard> {
             Text('Status: ${consultation.status}'),
             Text('Price: PKR ${consultation.price.toStringAsFixed(0)}'),
             Text('Scheduled: ${_formatDate(consultation.scheduledAt)}'),
-            if (consultation.description.isNotEmpty)
+            if (consultation.description != null &&
+                consultation.description.isNotEmpty)
               Text('Description: ${consultation.description}'),
           ],
         ),
@@ -2342,87 +2064,6 @@ class _UserDashboardState extends State<UserDashboard> {
         ],
       ),
     );
-  }
-
-  // Start chat with lawyer
-  Future<void> _startChatWithLawyer(
-    Map<String, dynamic> lawyerData,
-    int index,
-  ) async {
-    try {
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      // Get current user
-      UserModel? currentUser = await _getCurrentUser();
-
-      if (currentUser == null) {
-        Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please login to start chatting'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      // Extract lawyer information
-      String lawyerId =
-          lawyerData['userId'] as String? ??
-          lawyerData['id'] as String? ??
-          'lawyer_$index';
-      String lawyerName = lawyerData['name'] as String? ?? 'Unknown Lawyer';
-      String lawyerEmail =
-          lawyerData['email'] as String? ?? 'lawyer@servipak.com';
-      String? lawyerProfileImage = lawyerData['profileImage'] as String?;
-
-      // Debug: Print lawyer profile image
-      print(
-        '🔍 UserDashboard: Lawyer ${lawyerName} - ProfileImage: $lawyerProfileImage',
-      );
-
-      // Create or get existing chat
-      await RealtimeChatService.createChatRealtime(
-        lawyerId: lawyerId,
-        userId: currentUser.id,
-      );
-
-      // Create ChatModel for navigation
-      ChatModel chat = ChatModel(
-        id: _generateChatId(lawyerId, currentUser.id),
-        lawyerId: lawyerId,
-        lawyerName: lawyerName,
-        lawyerEmail: lawyerEmail,
-        lawyerProfileImage: lawyerProfileImage,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        userEmail: currentUser.email,
-        userProfileImage: currentUser.profileImage,
-        createdAt: DateTime.now(),
-        consultationIds: [],
-      );
-
-      Navigator.pop(context); // Close loading dialog
-
-      // Navigate to chat screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => UserChatScreen(chat: chat)),
-      );
-    } catch (e) {
-      Navigator.pop(context); // Close loading dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to start chat: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 
   // Generate unique chat ID
