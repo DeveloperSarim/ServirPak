@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_constants.dart';
+import '../models/consultation_model.dart';
 import 'lawyer_wallet_service.dart';
+import 'google_meet_service.dart';
 
 class PaymentService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -67,8 +69,23 @@ class PaymentService {
       // Update user's total spent
       await _updateUserTotalSpent(userId, totalAmount);
 
-      // Add payment to lawyer wallet if payment is completed
+      // Create consultation if payment is completed
       if (paymentStatus == 'completed') {
+        await _createConsultation(
+          userId: userId,
+          lawyerId: lawyerId,
+          lawyerName: lawyerName,
+          consultationDate: consultationDate,
+          consultationTime: consultationTime,
+          description: description,
+          category: category,
+          consultationFee: consultationFee,
+          platformFee: platformFee,
+          totalAmount: totalAmount,
+          paymentId: paymentId,
+        );
+
+        // Add payment to lawyer wallet
         await _addPaymentToLawyerWallet(
           lawyerId: lawyerId,
           lawyerName: lawyerName,
@@ -294,6 +311,101 @@ class PaymentService {
       print('✅ Payment added to lawyer wallet: $amount');
     } catch (e) {
       print('❌ Error adding payment to lawyer wallet: $e');
+    }
+  }
+
+  // Create consultation after successful payment
+  static Future<void> _createConsultation({
+    required String userId,
+    required String lawyerId,
+    required String lawyerName,
+    required String consultationDate,
+    required String consultationTime,
+    required String description,
+    required String category,
+    required double consultationFee,
+    required double platformFee,
+    required double totalAmount,
+    required String paymentId,
+  }) async {
+    try {
+      print('📅 Creating consultation after successful payment...');
+
+      // Generate consultation ID
+      String consultationId =
+          'consultation_${DateTime.now().millisecondsSinceEpoch}';
+
+      // Generate meeting link
+      String meetingLink = GoogleMeetService.generateScheduledMeetingLink(
+        lawyerId: lawyerId,
+        userId: userId,
+        consultationId: consultationId,
+        date: consultationDate,
+        time: consultationTime,
+        lawyerName: lawyerName,
+        userName: 'Client', // We'll get this from user data
+      );
+
+      // Parse date and time
+      DateTime scheduledDateTime = _parseDateTime(
+        consultationDate,
+        consultationTime,
+      );
+
+      // Create consultation model
+      final consultation = ConsultationModel(
+        id: consultationId,
+        userId: userId,
+        lawyerId: lawyerId,
+        type: 'paid',
+        category: category,
+        city: 'Lahore', // Default city
+        description: description,
+        price: consultationFee,
+        platformFee: platformFee,
+        totalAmount: totalAmount,
+        consultationDate: consultationDate,
+        consultationTime: consultationTime,
+        meetingLink: meetingLink,
+        status: AppConstants.pendingStatus,
+        scheduledAt: scheduledDateTime,
+        paymentId: paymentId,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Save consultation to Firestore
+      await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .doc(consultationId)
+          .set(consultation.toFirestore());
+
+      print('✅ Consultation created successfully with ID: $consultationId');
+      print('✅ Meeting link: $meetingLink');
+    } catch (e) {
+      print('❌ Error creating consultation: $e');
+    }
+  }
+
+  // Parse date and time to DateTime
+  static DateTime _parseDateTime(String date, String time) {
+    try {
+      // Parse date (format: YYYY-MM-DD)
+      List<String> dateParts = date.split('-');
+      int year = int.parse(dateParts[0]);
+      int month = int.parse(dateParts[1]);
+      int day = int.parse(dateParts[2]);
+
+      // Parse time (format: HH:MM)
+      List<String> timeParts = time.split(':');
+      int hour = int.parse(timeParts[0]);
+      int minute = int.parse(timeParts[1]);
+
+      return DateTime(year, month, day, hour, minute);
+    } catch (e) {
+      print('❌ Error parsing date/time: $e');
+      // Return current time + 1 day as fallback
+      return DateTime.now().add(const Duration(days: 1));
     }
   }
 }

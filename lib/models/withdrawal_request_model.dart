@@ -52,8 +52,12 @@ class WithdrawalRequestModel {
       accountHolderName: map['accountHolderName'] ?? '',
       status: map['status'] ?? 'pending',
       rejectionReason: map['rejectionReason'],
-      requestedAt: map['requestedAt']?.toDate() ?? DateTime.now(),
-      processedAt: map['processedAt']?.toDate(),
+      requestedAt: map['requestedAt'] is DateTime
+          ? map['requestedAt'] as DateTime
+          : (map['requestedAt']?.toDate() ?? DateTime.now()),
+      processedAt: map['processedAt'] is DateTime
+          ? map['processedAt'] as DateTime
+          : map['processedAt']?.toDate(),
       processedBy: map['processedBy'],
       notes: map['notes'],
     );

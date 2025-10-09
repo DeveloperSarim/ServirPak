@@ -36,8 +36,12 @@ class LawyerWalletModel {
       totalWithdrawn: (map['totalWithdrawn'] ?? 0.0).toDouble(),
       totalFees: (map['totalFees'] ?? 0.0).toDouble(),
       totalConsultations: map['totalConsultations'] ?? 0,
-      createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
-      updatedAt: map['updatedAt']?.toDate() ?? DateTime.now(),
+      createdAt: map['createdAt'] is DateTime
+          ? map['createdAt'] as DateTime
+          : (map['createdAt']?.toDate() ?? DateTime.now()),
+      updatedAt: map['updatedAt'] is DateTime
+          ? map['updatedAt'] as DateTime
+          : (map['updatedAt']?.toDate() ?? DateTime.now()),
     );
   }
 

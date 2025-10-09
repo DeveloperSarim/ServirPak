@@ -5,6 +5,7 @@ import '../../models/consultation_model.dart';
 import '../../models/user_model.dart';
 import '../../services/consultation_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/google_meet_service.dart';
 import '../../constants/app_constants.dart';
 
 class LawyerConsultationsScreen extends StatefulWidget {
@@ -253,6 +254,25 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
       );
       print('🔍 LawyerConsultationsScreen: Session data: $session');
 
+      // First, let's check all consultations in the collection
+      QuerySnapshot allSnapshot = await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .get();
+
+      print('🔍 Total consultations in collection: ${allSnapshot.docs.length}');
+
+      for (var doc in allSnapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        print('🔍 Consultation ${doc.id}:');
+        print('  - User ID: ${data['userId']}');
+        print('  - Lawyer ID: ${data['lawyerId']}');
+        print('  - Status: ${data['status']}');
+        print('  - Category: ${data['category']}');
+        print('  - Created: ${data['createdAt']}');
+        print('  ---');
+      }
+
+      // Now get consultations for this specific lawyer
       yield* _firestore
           .collection(AppConstants.consultationsCollection)
           .where('lawyerId', isEqualTo: lawyerId)
@@ -324,8 +344,8 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
 
       print('🔍 Debug: Creating consultation for lawyer ID: $lawyerId');
 
-      // Create a test consultation
-      await _firestore.collection(AppConstants.consultationsCollection).add({
+      // Create a test consultation with proper structure
+      Map<String, dynamic> consultationData = {
         'userId': 'test_user_${DateTime.now().millisecondsSinceEpoch}',
         'lawyerId': lawyerId,
         'type': 'free',
@@ -334,10 +354,29 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
         'description':
             'Test consultation created from lawyer consultation screen',
         'price': 0.0,
+        'platformFee': 0.0,
+        'totalAmount': 0.0,
+        'consultationDate': DateTime.now()
+            .add(const Duration(days: 1))
+            .toString()
+            .split(' ')[0],
+        'consultationTime': DateTime.now()
+            .add(const Duration(days: 1))
+            .toString()
+            .split(' ')[1],
+        'meetingLink': '',
         'status': 'pending',
-        'scheduledAt': DateTime.now().add(const Duration(days: 1)),
-        'createdAt': DateTime.now(),
-      });
+        'scheduledAt': Timestamp.fromDate(
+          DateTime.now().add(const Duration(days: 1)),
+        ),
+        'createdAt': Timestamp.fromDate(DateTime.now()),
+      };
+
+      print('🔍 Debug: Consultation data: $consultationData');
+
+      await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .add(consultationData);
 
       print('✅ Debug: Test consultation created successfully!');
 
@@ -548,6 +587,27 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
                 ],
               ],
             ),
+
+            // Join Meeting Button (for accepted consultations)
+            if (consultation.status == 'accepted') ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _joinMeeting(consultation),
+                  icon: const Icon(Icons.video_call, size: 18),
+                  label: const Text('Join Meeting'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -686,6 +746,49 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
                 ).format(consultation.createdAt),
               ),
 
+              // Meeting Link (if exists)
+              if (consultation.meetingLink.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Meeting Link:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.video_call,
+                        color: Colors.blue,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          consultation.meetingLink,
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => _joinMeeting(consultation),
+                        icon: const Icon(Icons.launch, color: Colors.blue),
+                        tooltip: 'Join Meeting',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 12),
               const Text(
                 'Description:',
@@ -761,6 +864,74 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to update consultation: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _joinMeeting(ConsultationModel consultation) async {
+    try {
+      // Check if consultation has a meeting link
+      String meetingLink = consultation.meetingLink;
+
+      if (meetingLink.isEmpty) {
+        // Generate a new meeting link if none exists
+        meetingLink = GoogleMeetService.generateScheduledMeetingLink(
+          lawyerId: consultation.lawyerId,
+          userId: consultation.userId,
+          consultationId: consultation.id,
+          date: DateFormat('yyyy-MM-dd').format(consultation.scheduledAt),
+          time: DateFormat('HH:mm').format(consultation.scheduledAt),
+          lawyerName: 'Lawyer', // You can fetch this from lawyer data
+          userName: 'Client', // You can fetch this from user data
+        );
+
+        // Save the meeting link to the consultation
+        await _firestore
+            .collection(AppConstants.consultationsCollection)
+            .doc(consultation.id)
+            .update({'meetingLink': meetingLink});
+      }
+
+      // Convert old meeting links to new Google Meet format
+      String convertedLink = GoogleMeetService.convertToGoogleMeetLink(
+        meetingLink,
+      );
+
+      print('🔗 Original meeting link: $meetingLink');
+      print('🔗 Converted meeting link: $convertedLink');
+
+      // Validate the converted Google Meet link
+      if (!GoogleMeetService.isValidGoogleMeetLink(convertedLink)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to create valid meeting link'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Try to launch the meeting with fallback
+      bool launched = await GoogleMeetService.launchMeetingWithFallback(
+        convertedLink,
+        context,
+      );
+
+      if (launched) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Opening Google Meet...'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error joining meeting: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error joining meeting: $e'),
           backgroundColor: Colors.red,
         ),
       );

@@ -385,8 +385,9 @@ class _LawyerWalletScreenState extends State<LawyerWalletScreen> {
     final double fees = (transaction['fees'] ?? 0.0).toDouble();
     final double netAmount = (transaction['netAmount'] ?? 0.0).toDouble();
     final String description = transaction['description'] ?? '';
-    final DateTime createdAt =
-        transaction['createdAt']?.toDate() ?? DateTime.now();
+    final DateTime createdAt = transaction['createdAt'] is DateTime
+        ? transaction['createdAt'] as DateTime
+        : (transaction['createdAt']?.toDate() ?? DateTime.now());
 
     Color amountColor = Colors.green;
     IconData amountIcon = Icons.add;
@@ -459,8 +460,9 @@ class _LawyerWalletScreenState extends State<LawyerWalletScreen> {
     final double netAmount = (withdrawal['netAmount'] ?? 0.0).toDouble();
     final String status = withdrawal['status'] ?? 'pending';
     final String bankName = withdrawal['bankName'] ?? '';
-    final DateTime requestedAt =
-        withdrawal['requestedAt']?.toDate() ?? DateTime.now();
+    final DateTime requestedAt = withdrawal['requestedAt'] is DateTime
+        ? withdrawal['requestedAt'] as DateTime
+        : (withdrawal['requestedAt']?.toDate() ?? DateTime.now());
 
     Color statusColor = Colors.orange;
     IconData statusIcon = Icons.pending;
