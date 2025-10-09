@@ -20,12 +20,14 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
   late Stream<List<ChatMessageModel>> _messagesStream;
   String? _currentLawyerId;
   bool _isTyping = false;
+  bool _hasText = false;
 
   @override
   void initState() {
     super.initState();
     _loadCurrentLawyerId();
     _setupMessagesStream();
+    _messageController.addListener(_onTextChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
@@ -45,6 +47,12 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
     } catch (e) {
       print('❌ Error loading lawyer ID: $e');
     }
+  }
+
+  void _onTextChanged() {
+    setState(() {
+      _hasText = _messageController.text.trim().isNotEmpty;
+    });
   }
 
   void _setupMessagesStream() {
@@ -102,6 +110,7 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
 
     setState(() {
       _isTyping = false;
+      _hasText = false;
     });
   }
 
@@ -176,7 +185,7 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
           ),
           const SizedBox(width: 8),
           CircleAvatar(
-            backgroundColor: _isTyping || _messageController.text.trim().isEmpty
+            backgroundColor: _isTyping || !_hasText
                 ? Colors.grey.shade400
                 : const Color(0xFF8B4513),
             child: _isTyping
@@ -189,9 +198,7 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
                     ),
                   )
                 : IconButton(
-                    onPressed: _messageController.text.trim().isNotEmpty
-                        ? _sendMessage
-                        : null,
+                    onPressed: _hasText && !_isTyping ? _sendMessage : null,
                     icon: const Icon(Icons.send, color: Colors.white),
                   ),
           ),
