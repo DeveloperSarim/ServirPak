@@ -4,7 +4,9 @@ import '../../services/auth_service.dart';
 import '../../constants/app_constants.dart';
 
 class MyConsultationsScreen extends StatefulWidget {
-  const MyConsultationsScreen({super.key});
+  final VoidCallback? onBackToHome;
+
+  const MyConsultationsScreen({super.key, this.onBackToHome});
 
   @override
   State<MyConsultationsScreen> createState() => _MyConsultationsScreenState();
@@ -30,7 +32,15 @@ class _MyConsultationsScreenState extends State<MyConsultationsScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF8B4513)),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            // If callback is provided, use it to navigate to home
+            if (widget.onBackToHome != null) {
+              widget.onBackToHome!();
+            } else {
+              // Otherwise, just pop the current screen
+              Navigator.of(context).pop();
+            }
+          },
         ),
         actions: [
           IconButton(

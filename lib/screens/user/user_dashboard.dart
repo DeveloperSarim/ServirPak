@@ -3,16 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../services/consultation_service.dart';
 import '../../services/demo_data_service.dart';
-import '../../services/realtime_chat_service.dart';
 import '../../constants/app_constants.dart';
 import '../../models/consultation_model.dart';
 import '../../models/user_model.dart';
-import '../../models/chat_model.dart';
 import '../auth/login_screen.dart';
 // import '../consultation/consultation_booking_screen.dart';
 import 'user_chat_list_screen.dart';
-import 'user_chat_screen.dart';
 import '../profile/user_profile_screen.dart';
+import '../profile/my_consultations_screen.dart';
 import 'lawyer_booking_screen.dart';
 import 'lawyer_list_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
@@ -354,7 +352,13 @@ class _UserDashboardState extends State<UserDashboard> {
       case 1:
         return _buildFindLawyers();
       case 2:
-        return _buildMyCases();
+        return MyConsultationsScreen(
+          onBackToHome: () {
+            setState(() {
+              _selectedIndex = 0; // Navigate to home tab
+            });
+          },
+        );
       case 3:
         return const UserChatListScreen();
       case 4:
@@ -1215,69 +1219,6 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMyCases() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Consultations'),
-        backgroundColor: const Color(0xFF8B4513), // Saddle Brown
-        foregroundColor: Colors.white,
-      ),
-      body: FutureBuilder<List<ConsultationModel>>(
-        future: _getUserConsultations(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          List<ConsultationModel> consultations = snapshot.data ?? [];
-
-          if (consultations.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.folder_open, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No consultations yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  const Text(
-                    'Book your first consultation!',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () => _addDemoConsultations(),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Demo Consultations'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B4513),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: consultations.length,
-            itemBuilder: (context, index) {
-              ConsultationModel consultation = consultations[index];
-              return _buildConsultationCard(consultation);
-            },
-          );
-        },
       ),
     );
   }
