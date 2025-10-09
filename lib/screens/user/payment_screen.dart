@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/stripe_payment_service.dart';
+import '../../services/payment_service.dart';
+import '../../services/auth_service.dart';
 
 // Card number formatter for proper spacing
 class CardNumberInputFormatter extends TextInputFormatter {
@@ -94,6 +96,7 @@ class CVCInputFormatter extends TextInputFormatter {
 }
 
 class PaymentScreen extends StatefulWidget {
+  final String lawyerId;
   final String lawyerName;
   final String lawyerSpecialization;
   final double consultationFee;
@@ -106,6 +109,7 @@ class PaymentScreen extends StatefulWidget {
 
   const PaymentScreen({
     super.key,
+    required this.lawyerId,
     required this.lawyerName,
     required this.lawyerSpecialization,
     required this.consultationFee,
@@ -145,6 +149,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
 
     try {
+      // Get current user
+      final session = await AuthService.getSavedUserSession();
+      String userId = session['userId'] as String;
+
+      // Process payment
       bool success = await StripePaymentService.processPayment(
         cardNumber: _cardNumberController.text.replaceAll(' ', ''),
         expiryMonth: _expiryMonthController.text,
@@ -155,8 +164,45 @@ class _PaymentScreenState extends State<PaymentScreen> {
       );
 
       if (success) {
-        // Show success dialog
-        _showPaymentSuccessDialog();
+        // Generate payment ID
+        String paymentId = 'pay_${DateTime.now().millisecondsSinceEpoch}';
+
+        // Get card details for saving
+        String cardNumber = _cardNumberController.text.replaceAll(' ', '');
+        String cardLastFour = cardNumber.length >= 4
+            ? cardNumber.substring(cardNumber.length - 4)
+            : '****';
+
+        // Determine card type
+        String cardType = _getCardType(cardNumber);
+
+        // Save payment to Firestore
+        bool saved = await PaymentService.savePayment(
+          userId: userId,
+          lawyerId: widget.lawyerId,
+          lawyerName: widget.lawyerName,
+          lawyerSpecialization: widget.lawyerSpecialization,
+          consultationFee: widget.consultationFee,
+          platformFee: widget.platformFee,
+          totalAmount: widget.totalAmount,
+          consultationDate: widget.consultationDate,
+          consultationTime: widget.consultationTime,
+          description: widget.description,
+          category: widget.category,
+          cardLastFour: cardLastFour,
+          cardType: cardType,
+          paymentStatus: 'completed',
+          paymentId: paymentId,
+        );
+
+        if (saved) {
+          print('✅ Payment saved to Firestore successfully');
+          _showPaymentSuccessDialog();
+        } else {
+          _showPaymentErrorDialog(
+            'Payment processed but failed to save. Please contact support.',
+          );
+        }
       } else {
         _showPaymentErrorDialog('Payment failed. Please try again.');
       }
@@ -167,6 +213,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
         _isPaymentProcessing = false;
       });
     }
+  }
+
+  String _getCardType(String cardNumber) {
+    String cleanNumber = cardNumber.replaceAll(RegExp(r'\D'), '');
+
+    if (cleanNumber.startsWith('4')) {
+      return 'Visa';
+    } else if (cleanNumber.startsWith('5') || cleanNumber.startsWith('2')) {
+      return 'Mastercard';
+    } else if (cleanNumber.startsWith('3')) {
+      return 'American Express';
+    } else if (cleanNumber.startsWith('6')) {
+      return 'Discover';
+    }
+
+    return 'Unknown';
   }
 
   void _showPaymentSuccessDialog() {

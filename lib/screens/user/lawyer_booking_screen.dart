@@ -206,6 +206,7 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => PaymentScreen(
+          lawyerId: widget.lawyerId,
           lawyerName: widget.lawyerData['name'] ?? 'Unknown Lawyer',
           lawyerSpecialization:
               widget.lawyerData['specialization'] ?? 'General Law',

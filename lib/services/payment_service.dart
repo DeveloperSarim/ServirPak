@@ -1,294 +1,235 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/payment_model.dart';
 import '../constants/app_constants.dart';
 
 class PaymentService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Create payment record
-  static Future<String> createPayment({
-    required String consultationId,
+  // Save payment details to Firestore
+  static Future<bool> savePayment({
     required String userId,
     required String lawyerId,
-    required double amount,
-    required String paymentMethod,
-    String currency = 'PKR',
-    String? paymentGateway,
-  }) async {
-    try {
-      PaymentModel payment = PaymentModel(
-        id: '', // Will be set by Firestore
-        consultationId: consultationId,
-        userId: userId,
-        lawyerId: lawyerId,
-        amount: amount,
-        currency: currency,
-        paymentMethod: paymentMethod,
-        status: AppConstants.pendingStatus,
-        paymentGateway: paymentGateway,
-        createdAt: DateTime.now(),
-      );
-
-      DocumentReference docRef = await _firestore
-          .collection(AppConstants.paymentsCollection)
-          .add(payment.toFirestore());
-
-      print('Payment created successfully: ${docRef.id}');
-      return docRef.id;
-    } catch (e) {
-      print('Error creating payment: $e');
-      rethrow;
-    }
-  }
-
-  // Update payment status
-  static Future<void> updatePaymentStatus({
+    required String lawyerName,
+    required String lawyerSpecialization,
+    required double consultationFee,
+    required double platformFee,
+    required double totalAmount,
+    required String consultationDate,
+    required String consultationTime,
+    required String description,
+    required String category,
+    required String cardLastFour,
+    required String cardType,
+    required String paymentStatus,
     required String paymentId,
-    required String status,
-    String? transactionId,
-    String? gatewayTransactionId,
-    String? failureReason,
   }) async {
     try {
-      Map<String, dynamic> updateData = {
-        'status': status,
-        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      print('💾 Saving payment to Firestore...');
+
+      // Create payment document
+      Map<String, dynamic> paymentData = {
+        'userId': userId,
+        'lawyerId': lawyerId,
+        'lawyerName': lawyerName,
+        'lawyerSpecialization': lawyerSpecialization,
+        'consultationFee': consultationFee,
+        'platformFee': platformFee,
+        'totalAmount': totalAmount,
+        'consultationDate': consultationDate,
+        'consultationTime': consultationTime,
+        'description': description,
+        'category': category,
+        'cardLastFour': cardLastFour,
+        'cardType': cardType,
+        'paymentStatus': paymentStatus,
+        'paymentId': paymentId,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      if (transactionId != null) updateData['transactionId'] = transactionId;
-      if (gatewayTransactionId != null)
-        updateData['gatewayTransactionId'] = gatewayTransactionId;
-      if (failureReason != null) updateData['failureReason'] = failureReason;
-      if (status == AppConstants.completedStatus) {
-        updateData['completedAt'] = Timestamp.fromDate(DateTime.now());
-      }
+      // Save to payments collection
+      DocumentReference paymentRef = await _firestore
+          .collection(AppConstants.paymentsCollection)
+          .add(paymentData);
 
+      print('✅ Payment saved with ID: ${paymentRef.id}');
+
+      // Also save to user's payment history
       await _firestore
-          .collection(AppConstants.paymentsCollection)
-          .doc(paymentId)
-          .update(updateData);
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .collection('payments')
+          .doc(paymentRef.id)
+          .set(paymentData);
 
-      print('Payment status updated: $paymentId -> $status');
+      print('✅ Payment added to user payment history');
+
+      // Update user's total spent
+      await _updateUserTotalSpent(userId, totalAmount);
+
+      return true;
     } catch (e) {
-      print('Error updating payment status: $e');
-      rethrow;
+      print('❌ Error saving payment: $e');
+      return false;
     }
   }
 
-  // Get payment by ID
-  static Future<PaymentModel?> getPaymentById(String paymentId) async {
+  // Update user's total spent amount
+  static Future<void> _updateUserTotalSpent(
+    String userId,
+    double amount,
+  ) async {
     try {
-      DocumentSnapshot doc = await _firestore
-          .collection(AppConstants.paymentsCollection)
-          .doc(paymentId)
-          .get();
+      DocumentReference userRef = _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId);
 
-      if (doc.exists) {
-        return PaymentModel.fromFirestore(doc);
-      }
-      return null;
+      await _firestore.runTransaction((transaction) async {
+        DocumentSnapshot userDoc = await transaction.get(userRef);
+
+        if (userDoc.exists) {
+          Map<String, dynamic> userData =
+              userDoc.data() as Map<String, dynamic>;
+          double currentTotal = (userData['totalSpent'] ?? 0.0).toDouble();
+          double newTotal = currentTotal + amount;
+
+          transaction.update(userRef, {
+            'totalSpent': newTotal,
+            'lastPaymentDate': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+          print('💰 Updated user total spent: $newTotal');
+        }
+      });
     } catch (e) {
-      print('Error getting payment by ID: $e');
-      return null;
+      print('❌ Error updating user total spent: $e');
     }
   }
 
-  // Get payments by user ID
-  static Future<List<PaymentModel>> getPaymentsByUserId(String userId) async {
+  // Get user's payment history
+  static Future<List<Map<String, dynamic>>> getUserPaymentHistory(
+    String userId,
+  ) async {
     try {
-      QuerySnapshot snapshot = await _firestore
-          .collection(AppConstants.paymentsCollection)
-          .where('userId', isEqualTo: userId)
+      QuerySnapshot payments = await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .collection('payments')
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs
-          .map((doc) => PaymentModel.fromFirestore(doc))
-          .toList();
+      return payments.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
     } catch (e) {
-      print('Error getting payments by user ID: $e');
+      print('❌ Error getting payment history: $e');
       return [];
     }
   }
 
-  // Get payments by lawyer ID
-  static Future<List<PaymentModel>> getPaymentsByLawyerId(
-    String lawyerId,
-  ) async {
+  // Get all payments (admin view)
+  static Future<List<Map<String, dynamic>>> getAllPayments() async {
     try {
-      QuerySnapshot snapshot = await _firestore
+      QuerySnapshot payments = await _firestore
           .collection(AppConstants.paymentsCollection)
-          .where('lawyerId', isEqualTo: lawyerId)
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs
-          .map((doc) => PaymentModel.fromFirestore(doc))
-          .toList();
+      return payments.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
     } catch (e) {
-      print('Error getting payments by lawyer ID: $e');
-      return [];
-    }
-  }
-
-  // Get payments by consultation ID
-  static Future<List<PaymentModel>> getPaymentsByConsultationId(
-    String consultationId,
-  ) async {
-    try {
-      QuerySnapshot snapshot = await _firestore
-          .collection(AppConstants.paymentsCollection)
-          .where('consultationId', isEqualTo: consultationId)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => PaymentModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      print('Error getting payments by consultation ID: $e');
+      print('❌ Error getting all payments: $e');
       return [];
     }
   }
 
   // Get payments by status
-  static Future<List<PaymentModel>> getPaymentsByStatus(String status) async {
+  static Future<List<Map<String, dynamic>>> getPaymentsByStatus(
+    String status,
+  ) async {
     try {
-      QuerySnapshot snapshot = await _firestore
+      QuerySnapshot payments = await _firestore
           .collection(AppConstants.paymentsCollection)
-          .where('status', isEqualTo: status)
+          .where('paymentStatus', isEqualTo: status)
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs
-          .map((doc) => PaymentModel.fromFirestore(doc))
-          .toList();
+      return payments.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        return data;
+      }).toList();
     } catch (e) {
-      print('Error getting payments by status: $e');
+      print('❌ Error getting payments by status: $e');
       return [];
     }
   }
 
-  // Get all payments (Admin only)
-  static Future<List<PaymentModel>> getAllPayments() async {
+  // Update payment status
+  static Future<bool> updatePaymentStatus(
+    String paymentId,
+    String newStatus,
+  ) async {
     try {
-      QuerySnapshot snapshot = await _firestore
+      await _firestore
           .collection(AppConstants.paymentsCollection)
-          .orderBy('createdAt', descending: true)
-          .get();
+          .doc(paymentId)
+          .update({
+            'paymentStatus': newStatus,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
 
-      return snapshot.docs
-          .map((doc) => PaymentModel.fromFirestore(doc))
-          .toList();
+      print('✅ Payment status updated to: $newStatus');
+      return true;
     } catch (e) {
-      print('Error getting all payments: $e');
-      return [];
+      print('❌ Error updating payment status: $e');
+      return false;
     }
   }
 
   // Get payment statistics
   static Future<Map<String, dynamic>> getPaymentStatistics() async {
     try {
-      QuerySnapshot snapshot = await _firestore
+      QuerySnapshot payments = await _firestore
           .collection(AppConstants.paymentsCollection)
           .get();
 
-      double totalAmount = 0;
-      int completedPayments = 0;
-      int pendingPayments = 0;
+      double totalRevenue = 0.0;
+      double totalPlatformFee = 0.0;
+      int totalPayments = payments.docs.length;
+      int successfulPayments = 0;
       int failedPayments = 0;
 
-      for (DocumentSnapshot doc in snapshot.docs) {
-        PaymentModel payment = PaymentModel.fromFirestore(doc);
+      for (QueryDocumentSnapshot doc in payments.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-        if (payment.isCompleted) {
-          totalAmount += payment.amount;
-          completedPayments++;
-        } else if (payment.isPending) {
-          pendingPayments++;
-        } else if (payment.isFailed) {
+        if (data['paymentStatus'] == 'completed') {
+          successfulPayments++;
+          totalRevenue += (data['totalAmount'] ?? 0.0).toDouble();
+          totalPlatformFee += (data['platformFee'] ?? 0.0).toDouble();
+        } else if (data['paymentStatus'] == 'failed') {
           failedPayments++;
         }
       }
 
       return {
-        'totalAmount': totalAmount,
-        'completedPayments': completedPayments,
-        'pendingPayments': pendingPayments,
+        'totalPayments': totalPayments,
+        'successfulPayments': successfulPayments,
         'failedPayments': failedPayments,
-        'totalPayments': snapshot.docs.length,
+        'totalRevenue': totalRevenue,
+        'totalPlatformFee': totalPlatformFee,
+        'successRate': totalPayments > 0
+            ? (successfulPayments / totalPayments * 100)
+            : 0.0,
       };
     } catch (e) {
-      print('Error getting payment statistics: $e');
+      print('❌ Error getting payment statistics: $e');
       return {};
-    }
-  }
-
-  // Process payment (simulate payment gateway)
-  static Future<bool> processPayment({
-    required String paymentId,
-    required String paymentMethod,
-    required double amount,
-  }) async {
-    try {
-      // Simulate payment processing delay
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Simulate payment success/failure based on amount
-      bool isSuccess = amount > 0 && amount <= 100000; // Max 100k PKR
-
-      if (isSuccess) {
-        await updatePaymentStatus(
-          paymentId: paymentId,
-          status: AppConstants.completedStatus,
-          transactionId: 'TXN_${DateTime.now().millisecondsSinceEpoch}',
-          gatewayTransactionId: 'GW_${DateTime.now().millisecondsSinceEpoch}',
-        );
-      } else {
-        await updatePaymentStatus(
-          paymentId: paymentId,
-          status: AppConstants.failedStatus,
-          failureReason: 'Payment amount exceeds limit or invalid',
-        );
-      }
-
-      return isSuccess;
-    } catch (e) {
-      print('Error processing payment: $e');
-      await updatePaymentStatus(
-        paymentId: paymentId,
-        status: AppConstants.failedStatus,
-        failureReason: 'Payment processing error: ${e.toString()}',
-      );
-      return false;
-    }
-  }
-
-  // Refund payment
-  static Future<bool> refundPayment({
-    required String paymentId,
-    required double amount,
-    String? reason,
-  }) async {
-    try {
-      PaymentModel? payment = await getPaymentById(paymentId);
-      if (payment == null || !payment.isCompleted) {
-        return false;
-      }
-
-      // Simulate refund processing
-      await Future.delayed(const Duration(seconds: 1));
-
-      await updatePaymentStatus(
-        paymentId: paymentId,
-        status: AppConstants.refundedStatus,
-        failureReason: reason ?? 'Refund requested by user',
-      );
-
-      return true;
-    } catch (e) {
-      print('Error refunding payment: $e');
-      return false;
     }
   }
 }
