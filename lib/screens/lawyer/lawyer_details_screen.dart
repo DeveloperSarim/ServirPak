@@ -4,6 +4,7 @@ import '../../models/lawyer_model.dart';
 import '../../models/review_model.dart';
 import '../../services/review_service.dart';
 import '../../constants/app_constants.dart';
+import '../user/lawyer_booking_screen.dart';
 
 class LawyerDetailsScreen extends StatefulWidget {
   final LawyerModel? lawyer;
@@ -772,11 +773,27 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
   Widget _buildBookConsultationButton() {
     return FloatingActionButton.extended(
       onPressed: () {
-        // Navigate to consultation booking
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Booking consultation with ${_currentLawyer?.name ?? 'lawyer'}...',
+        // Navigate to consultation booking screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LawyerBookingScreen(
+              lawyerId: _currentLawyer?.id ?? widget.lawyerId ?? '',
+              lawyerData: _currentLawyer != null
+                  ? {
+                      'id': _currentLawyer!.id,
+                      'userId': _currentLawyer!.userId,
+                      'name': _currentLawyer!.name,
+                      'email': _currentLawyer!.email,
+                      'phone': _currentLawyer!.phone,
+                      'specialization': _currentLawyer!.specialization,
+                      'experience': _currentLawyer!.experience,
+                      'rating': _currentLawyer!.rating,
+                      'profileImage': _currentLawyer!.profileImage,
+                      'consultationFee': _currentLawyer!.consultationFee,
+                      'officeHours': _currentLawyer!.officeHours,
+                    }
+                  : widget.lawyerData ?? {},
             ),
           ),
         );
