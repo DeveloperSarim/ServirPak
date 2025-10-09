@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/payment_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/review_service.dart';
+import 'review_screen.dart';
 
 class PaymentHistoryScreen extends StatefulWidget {
   const PaymentHistoryScreen({super.key});
@@ -13,6 +15,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   List<Map<String, dynamic>> _payments = [];
   bool _isLoading = true;
   String _userId = '';
+  Map<String, bool> _hasReviewed = {};
 
   @override
   void initState() {
@@ -36,9 +39,72 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         _payments = payments;
         _isLoading = false;
       });
+
+      // Check which lawyers have been reviewed
+      await _checkReviewStatus();
     } catch (e) {
       setState(() => _isLoading = false);
       print('❌ Error loading payment history: $e');
+    }
+  }
+
+  Future<void> _checkReviewStatus() async {
+    try {
+      Map<String, bool> reviewStatus = {};
+
+      for (var payment in _payments) {
+        String lawyerId = payment['lawyerId'] ?? '';
+        if (lawyerId.isNotEmpty) {
+          bool hasReviewed = await ReviewService().hasClientReviewed(
+            lawyerId,
+            _userId,
+          );
+          reviewStatus[lawyerId] = hasReviewed;
+        }
+      }
+
+      setState(() {
+        _hasReviewed = reviewStatus;
+      });
+    } catch (e) {
+      print('Error checking review status: $e');
+    }
+  }
+
+  Future<void> _navigateToReview(Map<String, dynamic> payment) async {
+    try {
+      bool? reviewSubmitted = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ReviewScreen(
+            lawyerId: payment['lawyerId'] ?? '',
+            lawyerName: payment['lawyerName'] ?? 'Unknown Lawyer',
+            lawyerSpecialization:
+                payment['lawyerSpecialization'] ?? 'General Law',
+            consultationId: payment['paymentId'] ?? '',
+            consultationType: payment['category'] ?? 'Consultation',
+          ),
+        ),
+      );
+
+      if (reviewSubmitted == true) {
+        // Refresh review status
+        await _checkReviewStatus();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Review submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error opening review: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -234,6 +300,14 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                 fontFamily: 'monospace',
               ),
             ),
+
+            // Review Button (only for completed payments)
+            if (payment['paymentStatus'] == 'completed') ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 12),
+              _buildReviewButton(payment),
+            ],
           ],
         ),
       ),
@@ -303,6 +377,33 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReviewButton(Map<String, dynamic> payment) {
+    String lawyerId = payment['lawyerId'] ?? '';
+    bool hasReviewed = _hasReviewed[lawyerId] ?? false;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: hasReviewed ? null : () => _navigateToReview(payment),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: hasReviewed
+              ? Colors.grey.withOpacity(0.3)
+              : const Color(0xFF8B4513),
+          foregroundColor: hasReviewed ? Colors.grey : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: hasReviewed ? 0 : 2,
+        ),
+        icon: Icon(hasReviewed ? Icons.check_circle : Icons.star, size: 20),
+        label: Text(
+          hasReviewed ? 'Review Submitted' : 'Write Review',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

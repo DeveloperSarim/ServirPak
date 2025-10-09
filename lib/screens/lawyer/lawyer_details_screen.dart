@@ -38,6 +38,13 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
     _initializeLawyer();
     _loadReviews();
     _loadConsultationCount();
+
+    // Add a small delay to ensure lawyer is initialized before loading reviews
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _loadReviews();
+      }
+    });
   }
 
   void _initializeLawyer() {
@@ -242,20 +249,49 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
   Future<void> _loadReviews() async {
     try {
       setState(() => _isLoadingReviews = true);
+
+      String? lawyerIdToUse;
+
+      // Determine which lawyer ID to use
       if (_currentLawyer != null) {
-        final reviews = await _reviewService.getLawyerReviews(
-          _currentLawyer!.id,
+        lawyerIdToUse = _currentLawyer!.id;
+        print(
+          '🔍 LawyerDetailsScreen: Using lawyer ID from model: $lawyerIdToUse',
         );
+      } else if (widget.lawyerId != null) {
+        lawyerIdToUse = widget.lawyerId;
+        print('🔍 LawyerDetailsScreen: Using widget lawyer ID: $lawyerIdToUse');
+      } else if (widget.lawyerData != null &&
+          widget.lawyerData!['id'] != null) {
+        lawyerIdToUse = widget.lawyerData!['id'] as String;
+        print(
+          '🔍 LawyerDetailsScreen: Using lawyer ID from data: $lawyerIdToUse',
+        );
+      }
+
+      if (lawyerIdToUse != null && lawyerIdToUse.isNotEmpty) {
+        print(
+          '🔍 LawyerDetailsScreen: Loading reviews for lawyer ID: $lawyerIdToUse',
+        );
+        final reviews = await _reviewService.getLawyerReviews(lawyerIdToUse);
+        print('🔍 LawyerDetailsScreen: Found ${reviews.length} reviews');
+
         setState(() {
           _reviews = reviews;
           _isLoadingReviews = false;
         });
       } else {
-        setState(() => _isLoadingReviews = false);
+        print(
+          '⚠️ LawyerDetailsScreen: No valid lawyer ID found for loading reviews',
+        );
+        setState(() {
+          _reviews = [];
+          _isLoadingReviews = false;
+        });
       }
     } catch (e) {
       setState(() => _isLoadingReviews = false);
-      print('Error loading reviews: $e');
+      print('❌ LawyerDetailsScreen: Error loading reviews: $e');
     }
   }
 
@@ -620,19 +656,94 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
               'Be the first to review this lawyer',
               style: TextStyle(color: Colors.grey[500]),
             ),
+            const SizedBox(height: 24),
+            // Add sample reviews button for testing
+            ElevatedButton.icon(
+              onPressed: _seedSampleReviews,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8B4513),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add Sample Reviews (Testing)'),
+            ),
           ],
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _reviews.length,
-      itemBuilder: (context, index) {
-        final review = _reviews[index];
-        return _buildReviewCard(review);
-      },
+    return RefreshIndicator(
+      onRefresh: _loadReviews,
+      color: const Color(0xFF8B4513),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _reviews.length,
+        itemBuilder: (context, index) {
+          final review = _reviews[index];
+          return _buildReviewCard(review);
+        },
+      ),
     );
+  }
+
+  Future<void> _seedSampleReviews() async {
+    try {
+      String? lawyerIdToUse;
+
+      // Determine which lawyer ID to use
+      if (_currentLawyer != null) {
+        lawyerIdToUse = _currentLawyer!.id;
+      } else if (widget.lawyerId != null) {
+        lawyerIdToUse = widget.lawyerId;
+      } else if (widget.lawyerData != null &&
+          widget.lawyerData!['id'] != null) {
+        lawyerIdToUse = widget.lawyerData!['id'] as String;
+      }
+
+      if (lawyerIdToUse != null && lawyerIdToUse.isNotEmpty) {
+        print(
+          '🔍 LawyerDetailsScreen: Seeding sample reviews for lawyer: $lawyerIdToUse',
+        );
+        await _reviewService.seedSampleReviews(lawyerIdToUse);
+
+        // Reload reviews after seeding
+        await _loadReviews();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sample reviews added successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        print('⚠️ LawyerDetailsScreen: No valid lawyer ID for seeding reviews');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Unable to add sample reviews - no lawyer ID found',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ LawyerDetailsScreen: Error seeding sample reviews: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding sample reviews: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildReviewCard(ReviewModel review) {
