@@ -41,12 +41,25 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
   }
 
   void _initializeLawyer() {
+    print('🔍 LawyerDetailsScreen: Initializing lawyer...');
+    print('🔍 LawyerDetailsScreen: widget.lawyer: ${widget.lawyer != null}');
+    print(
+      '🔍 LawyerDetailsScreen: widget.lawyerData: ${widget.lawyerData != null}',
+    );
+    print('🔍 LawyerDetailsScreen: widget.lawyerId: ${widget.lawyerId}');
+
     if (widget.lawyer != null) {
       _currentLawyer = widget.lawyer;
       print('🔍 LawyerDetailsScreen: Using provided lawyer model');
+      print(
+        '🔍 LawyerDetailsScreen: Lawyer profile image: ${_currentLawyer?.profileImage}',
+      );
     } else if (widget.lawyerData != null) {
       // Check if profileImage exists in lawyers collection first
       String? profileImage = widget.lawyerData!['profileImage'] as String?;
+      print(
+        '🔍 LawyerDetailsScreen: Profile image from lawyerData: $profileImage',
+      );
 
       if (profileImage == null || profileImage.isEmpty) {
         print(
@@ -94,8 +107,15 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
         createdAt: DateTime.now(),
       );
 
+      print(
+        '🔍 LawyerDetailsScreen: Created lawyer model with profile image: ${_currentLawyer?.profileImage}',
+      );
+
       // If no profile image, try to fetch from users collection
       if (profileImage == null || profileImage.isEmpty) {
+        print(
+          '🔄 LawyerDetailsScreen: No profile image found, fetching from users collection...',
+        );
         _fetchProfileImageFromUsers();
       }
     }
@@ -137,6 +157,79 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
       print(
         '❌ LawyerDetailsScreen: Error fetching profile image from users: $e',
       );
+    }
+  }
+
+  Future<String?> _getLawyerProfileImage() async {
+    try {
+      print('🔍 LawyerDetailsScreen: Starting profile image fetch...');
+
+      // First check if profileImage exists in lawyers collection
+      String? profileImage;
+
+      // Check lawyerData first (from lawyers collection)
+      if (widget.lawyerData != null) {
+        profileImage = widget.lawyerData!['profileImage'] as String?;
+        if (profileImage != null && profileImage.isNotEmpty) {
+          print(
+            '✅ LawyerDetailsScreen: Found profile image in lawyers collection: $profileImage',
+          );
+          return profileImage;
+        }
+      }
+
+      // Check current lawyer model
+      if (_currentLawyer?.profileImage != null &&
+          _currentLawyer!.profileImage!.isNotEmpty) {
+        print(
+          '✅ LawyerDetailsScreen: Found profile image in lawyer model: ${_currentLawyer!.profileImage}',
+        );
+        return _currentLawyer!.profileImage;
+      }
+
+      // DIRECTLY check users collection for lawyer role
+      print(
+        '🔄 LawyerDetailsScreen: Checking users collection for lawyer role...',
+      );
+
+      // Get all users with role = 'lawyer'
+      QuerySnapshot usersQuery = await FirebaseFirestore.instance
+          .collection(AppConstants.usersCollection)
+          .where('role', isEqualTo: 'lawyer')
+          .get();
+
+      print(
+        '🔍 LawyerDetailsScreen: Found ${usersQuery.docs.length} lawyers in users collection',
+      );
+
+      // Check if any lawyer matches our current lawyer
+      for (QueryDocumentSnapshot userDoc in usersQuery.docs) {
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        String? userName = userData['name'] as String?;
+        String? userProfileImage = userData['profileImage'] as String?;
+
+        print('🔍 LawyerDetailsScreen: Checking user: $userName');
+
+        // Match by name or check if this is our lawyer
+        if (userName != null &&
+            (_currentLawyer?.name == userName ||
+                widget.lawyerData?['name'] == userName)) {
+          if (userProfileImage != null && userProfileImage.isNotEmpty) {
+            print(
+              '✅ LawyerDetailsScreen: Found matching lawyer in users collection: $userName with image: $userProfileImage',
+            );
+            return userProfileImage;
+          }
+        }
+      }
+
+      print(
+        '⚠️ LawyerDetailsScreen: No profile image found for lawyer: ${_currentLawyer?.name}',
+      );
+      return null;
+    } catch (e) {
+      print('❌ LawyerDetailsScreen: Error fetching profile image: $e');
+      return null;
     }
   }
 
@@ -187,19 +280,72 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
     }
   }
 
-  ImageProvider? _getProfileImage() {
-    if (_currentLawyer?.profileImage != null &&
-        _currentLawyer!.profileImage!.isNotEmpty) {
-      print(
-        '🔍 LawyerDetailsScreen: Using profile image: ${_currentLawyer!.profileImage}',
-      );
-      return NetworkImage(_currentLawyer!.profileImage!);
-    }
+  Widget _buildProfileImage() {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: CircleAvatar(
+        radius: 50,
+        backgroundColor: Colors.white,
+        child: ClipOval(
+          child: FutureBuilder<String?>(
+            future: _getLawyerProfileImage(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF8B4513),
+                    strokeWidth: 2,
+                  ),
+                );
+              }
 
-    print(
-      '⚠️ LawyerDetailsScreen: No profile image available for ${_currentLawyer?.name}',
+              final profileImage = snapshot.data;
+
+              if (profileImage != null && profileImage.isNotEmpty) {
+                return Image.network(
+                  profileImage,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF8B4513),
+                        strokeWidth: 2,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.gavel,
+                      size: 50,
+                      color: Color(0xFF8B4513),
+                    );
+                  },
+                );
+              } else {
+                return const Icon(
+                  Icons.gavel,
+                  size: 50,
+                  color: Color(0xFF8B4513),
+                );
+              }
+            },
+          ),
+        ),
+      ),
     );
-    return null;
   }
 
   @override
@@ -267,31 +413,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Profile Image
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white,
-                    backgroundImage: _getProfileImage(),
-                    child: _getProfileImage() == null
-                        ? const Icon(
-                            Icons.gavel,
-                            size: 50,
-                            color: Color(0xFF8B4513),
-                          )
-                        : null,
-                  ),
-                ),
+                _buildProfileImage(),
 
                 const SizedBox(width: 20),
 
