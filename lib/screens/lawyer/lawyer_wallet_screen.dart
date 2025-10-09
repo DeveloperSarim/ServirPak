@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/lawyer_wallet_model.dart';
 import '../../services/lawyer_wallet_service.dart';
+import '../../services/withdrawal_service.dart';
 import 'withdrawal_screen.dart';
 
 class LawyerWalletScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class LawyerWalletScreen extends StatefulWidget {
 class _LawyerWalletScreenState extends State<LawyerWalletScreen> {
   LawyerWalletModel? _wallet;
   List<Map<String, dynamic>> _transactions = [];
+  List<Map<String, dynamic>> _withdrawalRequests = [];
   bool _isLoading = true;
   bool _isRefreshing = false;
 
@@ -53,6 +55,12 @@ class _LawyerWalletScreenState extends State<LawyerWalletScreen> {
       _transactions = await LawyerWalletService.getWalletTransactions(
         widget.lawyerId,
       );
+
+      // Load withdrawal requests
+      var withdrawals = await WithdrawalService.getLawyerWithdrawals(
+        widget.lawyerId,
+      );
+      _withdrawalRequests = withdrawals.map((w) => w.toMap()).toList();
 
       setState(() {
         _isLoading = false;
@@ -338,7 +346,7 @@ class _LawyerWalletScreenState extends State<LawyerWalletScreen> {
               ],
             ),
           ),
-          if (_transactions.isEmpty)
+          if (_transactions.isEmpty && _withdrawalRequests.isEmpty)
             const Padding(
               padding: EdgeInsets.all(20),
               child: Center(
@@ -352,10 +360,18 @@ class _LawyerWalletScreenState extends State<LawyerWalletScreen> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _transactions.length,
+              itemCount: _transactions.length + _withdrawalRequests.length,
               itemBuilder: (context, index) {
-                final transaction = _transactions[index];
-                return _buildTransactionItem(transaction);
+                if (index < _transactions.length) {
+                  // Show wallet transactions first
+                  final transaction = _transactions[index];
+                  return _buildTransactionItem(transaction);
+                } else {
+                  // Show withdrawal requests
+                  final withdrawalIndex = index - _transactions.length;
+                  final withdrawal = _withdrawalRequests[withdrawalIndex];
+                  return _buildWithdrawalItem(withdrawal);
+                }
               },
             ),
         ],
@@ -431,6 +447,130 @@ class _LawyerWalletScreenState extends State<LawyerWalletScreen> {
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWithdrawalItem(Map<String, dynamic> withdrawal) {
+    final double amount = (withdrawal['amount'] ?? 0.0).toDouble();
+    final double fees = (withdrawal['fees'] ?? 0.0).toDouble();
+    final double netAmount = (withdrawal['netAmount'] ?? 0.0).toDouble();
+    final String status = withdrawal['status'] ?? 'pending';
+    final String bankName = withdrawal['bankName'] ?? '';
+    final DateTime requestedAt =
+        withdrawal['requestedAt']?.toDate() ?? DateTime.now();
+
+    Color statusColor = Colors.orange;
+    IconData statusIcon = Icons.pending;
+    String statusText = 'Pending';
+
+    switch (status) {
+      case 'approved':
+        statusColor = Colors.green;
+        statusIcon = Icons.check_circle;
+        statusText = 'Approved';
+        break;
+      case 'rejected':
+        statusColor = Colors.red;
+        statusIcon = Icons.cancel;
+        statusText = 'Rejected';
+        break;
+      case 'completed':
+        statusColor = Colors.blue;
+        statusIcon = Icons.done_all;
+        statusText = 'Completed';
+        break;
+      default:
+        statusColor = Colors.orange;
+        statusIcon = Icons.pending;
+        statusText = 'Pending';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(statusIcon, color: statusColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Withdrawal Request - $bankName',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatDate(requestedAt),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        statusText,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (fees > 0)
+                      Text(
+                        'Fees: Rs. ${fees.toStringAsFixed(0)}',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '-Rs. ${amount.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (netAmount != amount)
+                Text(
+                  'Net: Rs. ${netAmount.toStringAsFixed(0)}',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+            ],
           ),
         ],
       ),
