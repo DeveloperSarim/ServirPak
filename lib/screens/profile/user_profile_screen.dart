@@ -6,11 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../../services/auth_service.dart';
 import '../../services/cloudinary_service.dart';
+import '../../services/payment_service.dart';
 import '../../constants/app_constants.dart';
 import '../../models/user_model.dart';
 import '../auth/login_screen.dart';
 import 'my_consultations_screen.dart';
 import 'edit_profile_screen.dart';
+import '../user/payment_history_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -24,12 +26,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final ImagePicker _picker = ImagePicker();
   UserModel? _currentUser;
   bool _isDarkMode = false;
+  List<Map<String, dynamic>> _paymentHistory = [];
+  double _totalSpent = 0.0;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _loadThemePreference();
+    _loadPaymentData();
   }
 
   Future<void> _loadThemePreference() async {
@@ -40,18 +45,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       });
     } catch (e) {
       print('Error loading theme preference: $e');
-    }
-  }
-
-  Future<void> _toggleTheme() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      setState(() {
-        _isDarkMode = !_isDarkMode;
-      });
-      await prefs.setBool('isDarkMode', _isDarkMode);
-    } catch (e) {
-      print('Error saving theme preference: $e');
     }
   }
 
@@ -95,6 +88,32 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       }
     } catch (e) {
       print('Error loading user data: $e');
+    }
+  }
+
+  Future<void> _loadPaymentData() async {
+    try {
+      final user = AuthService.currentUser;
+      if (user != null) {
+        // Load payment history
+        List<Map<String, dynamic>> payments =
+            await PaymentService.getUserPaymentHistory(user.uid);
+
+        // Calculate total spent
+        double totalSpent = 0.0;
+        for (var payment in payments) {
+          if (payment['paymentStatus'] == 'completed') {
+            totalSpent += (payment['totalAmount'] ?? 0.0).toDouble();
+          }
+        }
+
+        setState(() {
+          _paymentHistory = payments;
+          _totalSpent = totalSpent;
+        });
+      }
+    } catch (e) {
+      print('Error loading payment data: $e');
     }
   }
 
@@ -152,8 +171,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     _currentUser?.profileImage == null ||
                         _currentUser!.profileImage!.isEmpty
                     ? Text(
-                        _currentUser?.name?.substring(0, 1).toUpperCase() ??
-                            'U',
+                        _currentUser!.name.substring(0, 1).toUpperCase(),
                         style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -205,9 +223,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          if (_currentUser?.phone != null && _currentUser!.phone!.isNotEmpty)
+          if (_currentUser?.phone != null && _currentUser!.phone.isNotEmpty)
             Text(
-              _currentUser!.phone!,
+              _currentUser!.phone,
               style: TextStyle(
                 fontSize: 14,
                 color: _isDarkMode ? Colors.grey[400] : Colors.grey[500],
@@ -219,6 +237,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Widget _buildProfileStats() {
+    // Calculate payment statistics
+    int totalPayments = _paymentHistory.length;
+    int completedPayments = _paymentHistory
+        .where((p) => p['paymentStatus'] == 'completed')
+        .length;
+    int pendingPayments = _paymentHistory
+        .where((p) => p['paymentStatus'] == 'pending')
+        .length;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -233,12 +260,60 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _buildStatItem('Consultations', '0', Icons.gavel),
-          _buildStatItem('Completed', '0', Icons.check_circle),
-          _buildStatItem('Pending', '0', Icons.schedule),
+          // Payment statistics
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem(
+                'Total Payments',
+                totalPayments.toString(),
+                Icons.payment,
+              ),
+              _buildStatItem(
+                'Completed',
+                completedPayments.toString(),
+                Icons.check_circle,
+              ),
+              _buildStatItem(
+                'Pending',
+                pendingPayments.toString(),
+                Icons.schedule,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Total spent
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF8B4513).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF8B4513).withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.account_balance_wallet,
+                  color: Color(0xFF8B4513),
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Total Spent: PKR ${_totalSpent.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF8B4513),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -326,7 +401,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             icon: Icons.payment,
             title: 'Payment History',
             onTap: () {
-              _showPaymentHistoryDialog();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PaymentHistoryScreen(),
+                ),
+              );
             },
           ),
           _buildDivider(),
@@ -477,12 +557,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
-  // Payment History Dialog
-  void _showPaymentHistoryDialog() {
+  void _showHelpSupportDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Payment History'),
+        title: const Text('Help & Support'),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
@@ -588,95 +667,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  // Help & Support Dialog
-  void _showHelpSupportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Help & Support'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Need help? We\'re here for you!',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              _buildSupportOption(
-                icon: Icons.phone,
-                title: 'Call Support',
-                subtitle: '+92-300-1234567',
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Calling support...')),
-                  );
-                },
-              ),
-              _buildSupportOption(
-                icon: Icons.email,
-                title: 'Email Support',
-                subtitle: 'support@servirpak.com',
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening email client...')),
-                  );
-                },
-              ),
-              _buildSupportOption(
-                icon: Icons.chat,
-                title: 'Live Chat',
-                subtitle: 'Available 24/7',
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Starting live chat...')),
-                  );
-                },
-              ),
-              _buildSupportOption(
-                icon: Icons.help,
-                title: 'FAQ',
-                subtitle: 'Frequently Asked Questions',
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening FAQ...')),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSupportOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: const Color(0xFF8B4513)),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: onTap,
     );
   }
 }
