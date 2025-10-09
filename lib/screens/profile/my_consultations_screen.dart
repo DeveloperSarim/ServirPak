@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+import '../../services/google_meet_service.dart';
 import '../../constants/app_constants.dart';
 
 class MyConsultationsScreen extends StatefulWidget {
@@ -492,71 +493,51 @@ class _MyConsultationsScreenState extends State<MyConsultationsScreen> {
 
   void _openMeetingLink(String meetingLink) async {
     try {
-      // Try to launch the meeting link
-      if (meetingLink.isNotEmpty) {
-        // For web, we can use url_launcher or open directly
-        if (meetingLink.startsWith('http')) {
-          // Open in new tab/window
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Join Meeting'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Click the button below to join your meeting:'),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: SelectableText(
-                      meetingLink,
-                      style: const TextStyle(fontSize: 12, color: Colors.blue),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Close'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // For web, we can try to open the URL
-                    // This will work if the browser supports it
-                    _launchURL(meetingLink);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B4513),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Open Meeting'),
-                ),
-              ],
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invalid meeting link'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } else {
+      if (meetingLink.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('No meeting link available'),
             backgroundColor: Colors.orange,
           ),
         );
+        return;
+      }
+
+      // Convert old meeting links to new Google Meet format
+      String convertedLink = GoogleMeetService.convertToGoogleMeetLink(
+        meetingLink,
+      );
+
+      print('🔗 Original link: $meetingLink');
+      print('🔗 Converted link: $convertedLink');
+
+      // Validate the converted Google Meet link
+      if (!GoogleMeetService.isValidGoogleMeetLink(convertedLink)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to create valid meeting link'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Try to launch the meeting with fallback
+      bool launched = await GoogleMeetService.launchMeetingWithFallback(
+        convertedLink,
+        context,
+      );
+
+      if (launched) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Opening Google Meet...'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
+      print('❌ Error opening meeting: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error opening meeting: $e'),
@@ -564,48 +545,5 @@ class _MyConsultationsScreenState extends State<MyConsultationsScreen> {
         ),
       );
     }
-  }
-
-  void _launchURL(String url) {
-    // For web platform, we'll show a dialog with instructions
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Open Meeting'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('To join your meeting:'),
-            const SizedBox(height: 12),
-            const Text('1. Copy the link below'),
-            const Text('2. Paste it in a new browser tab'),
-            const Text('3. Join your consultation'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: SelectableText(
-                url,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.blue,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
   }
 }

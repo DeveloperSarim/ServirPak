@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/consultation_model.dart';
 import '../constants/app_constants.dart';
 import 'http_email_service.dart';
+import 'google_meet_service.dart';
 
 class ConsultationBookingService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -76,15 +77,17 @@ class ConsultationBookingService {
       print('💰 Platform fee (5%): PKR $platformFee');
       print('💰 Total amount: PKR $totalAmount');
 
-      // Generate meeting link
+      // Generate meeting link using Google Meet service
       String consultationId =
           'consultation_${DateTime.now().millisecondsSinceEpoch}';
-      String meetingLink = HTTPEmailService.generateMeetingLink(
+      String meetingLink = GoogleMeetService.generateScheduledMeetingLink(
         lawyerId: lawyerId,
         userId: userId,
         consultationId: consultationId,
         date: consultationDate,
         time: consultationTime,
+        lawyerName: lawyerData['name'] ?? 'Lawyer',
+        userName: userData['name'] ?? 'User',
       );
 
       // Parse date and time properly
