@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_constants.dart';
+import 'lawyer_wallet_service.dart';
 
 class PaymentService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -65,6 +66,18 @@ class PaymentService {
 
       // Update user's total spent
       await _updateUserTotalSpent(userId, totalAmount);
+
+      // Add payment to lawyer wallet if payment is completed
+      if (paymentStatus == 'completed') {
+        await _addPaymentToLawyerWallet(
+          lawyerId: lawyerId,
+          lawyerName: lawyerName,
+          lawyerEmail: '', // We'll get this from lawyer data
+          amount: consultationFee,
+          consultationId: paymentRef.id,
+          clientName: '', // We'll get this from user data
+        );
+      }
 
       return true;
     } catch (e) {
@@ -230,6 +243,57 @@ class PaymentService {
     } catch (e) {
       print('❌ Error getting payment statistics: $e');
       return {};
+    }
+  }
+
+  // Add payment to lawyer wallet
+  static Future<void> _addPaymentToLawyerWallet({
+    required String lawyerId,
+    required String lawyerName,
+    required String lawyerEmail,
+    required double amount,
+    required String consultationId,
+    required String clientName,
+  }) async {
+    try {
+      // Get lawyer email if not provided
+      if (lawyerEmail.isEmpty) {
+        DocumentSnapshot lawyerDoc = await _firestore
+            .collection(AppConstants.usersCollection)
+            .doc(lawyerId)
+            .get();
+
+        if (lawyerDoc.exists) {
+          Map<String, dynamic> lawyerData =
+              lawyerDoc.data() as Map<String, dynamic>;
+          lawyerEmail = lawyerData['email'] ?? '';
+        }
+      }
+
+      // Get client name if not provided
+      if (clientName.isEmpty) {
+        // We'll need to get this from the payment data or user data
+        clientName = 'Client';
+      }
+
+      // Create or get lawyer wallet
+      await LawyerWalletService.createOrGetWallet(
+        lawyerId: lawyerId,
+        lawyerName: lawyerName,
+        lawyerEmail: lawyerEmail,
+      );
+
+      // Add payment to wallet
+      await LawyerWalletService.addPaymentToWallet(
+        lawyerId: lawyerId,
+        amount: amount,
+        consultationId: consultationId,
+        clientName: clientName,
+      );
+
+      print('✅ Payment added to lawyer wallet: $amount');
+    } catch (e) {
+      print('❌ Error adding payment to lawyer wallet: $e');
     }
   }
 }

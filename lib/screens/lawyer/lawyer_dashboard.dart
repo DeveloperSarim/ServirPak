@@ -14,6 +14,7 @@ import 'lawyer_chat_screen.dart';
 import '../../utils/responsive_helper.dart';
 import '../../services/demo_data_service.dart';
 import 'lawyer_profile_management_screen.dart';
+import 'lawyer_wallet_screen.dart';
 
 class LawyerDashboard extends StatefulWidget {
   const LawyerDashboard({super.key});
@@ -112,6 +113,10 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             label: 'Consultations',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_balance_wallet),
+            label: 'Wallet',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
@@ -134,6 +139,12 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
           ),
         );
       case 3:
+        return LawyerWalletScreen(
+          lawyerId: _currentLawyer?.id ?? '',
+          lawyerName: _currentLawyer?.name ?? '',
+          lawyerEmail: _currentLawyer?.email ?? '',
+        );
+      case 4:
         return _buildProfile();
       default:
         return _buildMainDashboard();
