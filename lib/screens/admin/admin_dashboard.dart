@@ -425,8 +425,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
           .where('paymentStatus', isEqualTo: 'completed')
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF8B4513)),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error loading analytics: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: Text(
+              'No analytics data available',
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
         }
 
         int totalPayments = snapshot.data!.docs.length;
@@ -1719,8 +1739,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
           .where('paymentStatus', isEqualTo: 'completed')
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF8B4513)),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error loading revenue data: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: Text(
+              'No revenue data available',
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
         }
 
         double totalRevenue = 0;
@@ -1979,32 +2019,55 @@ class _AdminDashboardState extends State<AdminDashboard> {
           StreamBuilder<QuerySnapshot>(
             stream: _firestore
                 .collection('payments')
-                .where('paymentStatus', isEqualTo: 'completed')
                 .orderBy('createdAt', descending: true)
                 .limit(5)
                 .snapshots(),
             builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF8B4513)),
+                );
               }
 
-              if (snapshot.data!.docs.isEmpty) {
-                return const Text(
-                  'No completed transactions yet',
-                  style: TextStyle(color: Colors.grey),
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Error loading transactions: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No completed transactions yet',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
+
+              // Filter completed payments on client side
+              final completedPayments = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return data['paymentStatus'] == 'completed';
+              }).toList();
+
+              if (completedPayments.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No completed transactions yet',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 );
               }
 
               return Column(
-                children: snapshot.data!.docs.map((doc) {
+                children: completedPayments.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final amount =
-                      (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
-                  final commission =
-                      (data['platformFee'] as num?)?.toDouble() ?? 0.0;
-                  final createdAt =
-                      (data['createdAt'] as Timestamp?)?.toDate() ??
-                      DateTime.now();
+                  final amount = (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
+                  final commission = (data['platformFee'] as num?)?.toDouble() ?? 0.0;
+                  final createdAt = (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
