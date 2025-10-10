@@ -66,14 +66,18 @@ class ConsultationModel {
       consultationTime: data['consultationTime'] ?? '',
       meetingLink: data['meetingLink'] ?? '',
       status: data['status'] ?? 'pending',
-      scheduledAt: (data['scheduledAt'] as Timestamp).toDate(),
+      scheduledAt: data['scheduledAt'] != null
+          ? (data['scheduledAt'] as Timestamp).toDate()
+          : DateTime.now(),
       completedAt: data['completedAt'] != null
           ? (data['completedAt'] as Timestamp).toDate()
           : null,
       notes: data['notes'],
       paymentId: data['paymentId'],
       cancellationReason: data['cancellationReason'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
           : null,

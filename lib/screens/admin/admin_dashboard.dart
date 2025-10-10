@@ -8,6 +8,8 @@ import '../../services/auth_service.dart';
 import '../../services/image_service.dart';
 import '../../constants/app_constants.dart';
 import '../../services/lawyer_management_service.dart';
+import '../../services/consultation_service.dart';
+import '../../models/consultation_model.dart';
 import '../auth/login_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -90,6 +92,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 label: 'Verification',
               ),
               const BottomNavigationBarItem(
+                icon: Icon(Icons.folder),
+                label: 'Consultations',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.analytics),
+                label: 'Analytics',
+              ),
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.settings),
                 label: 'Settings',
               ),
@@ -111,6 +121,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 3:
         return _buildVerificationManagement();
       case 4:
+        return _buildConsultationsManagement();
+      case 5:
+        return _buildAnalyticsDashboard();
+      case 6:
         return _buildSettings();
       default:
         return _buildMainDashboard();
@@ -407,37 +421,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _buildAnalyticsSection() {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore
-          .collection(AppConstants.consultationsCollection)
+          .collection('payments')
+          .where('paymentStatus', isEqualTo: 'completed')
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        int totalConsultations = snapshot.data!.docs.length;
-        int completedConsultations = snapshot.data!.docs
-            .where((doc) => (doc.data() as Map)['status'] == 'completed')
-            .length;
-        int pendingConsultations = snapshot.data!.docs
-            .where((doc) => (doc.data() as Map)['status'] == 'pending')
-            .length;
-        int acceptedConsultations = snapshot.data!.docs
-            .where((doc) => (doc.data() as Map)['status'] == 'accepted')
-            .length;
+        int totalPayments = snapshot.data!.docs.length;
+        int completedPayments = snapshot.data!.docs.length; // All are completed
+        int pendingPayments = 0; // No pending in completed payments
+        int acceptedPayments = 0; // No accepted in completed payments
 
         double totalRevenue = 0;
+        double totalCommission = 0;
         for (var doc in snapshot.data!.docs) {
           final data = doc.data() as Map<String, dynamic>;
-          if (data['price'] != null && data['status'] == 'completed') {
-            totalRevenue += (data['price'] as num).toDouble();
-          }
+          final amount = (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
+          totalRevenue += amount;
+          final platformFee = (data['platformFee'] as num?)?.toDouble() ?? 0.0;
+          totalCommission += platformFee;
         }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Consultation Analytics',
+              'Payment Analytics',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -456,26 +467,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   childAspectRatio: constraints.maxWidth > 400 ? 3.0 : 2.5,
                   children: [
                     _buildStatCard(
-                      'Total Consultations',
-                      totalConsultations.toString(),
-                      Icons.assignment,
+                      'Total Payments',
+                      totalPayments.toString(),
+                      Icons.payment,
                       const Color(0xFF8B4513),
                     ),
                     _buildStatCard(
                       'Completed',
-                      completedConsultations.toString(),
+                      completedPayments.toString(),
                       Icons.check_circle,
                       Colors.green,
                     ),
                     _buildStatCard(
                       'Pending',
-                      pendingConsultations.toString(),
+                      pendingPayments.toString(),
                       Icons.pending,
                       Colors.orange,
                     ),
                     _buildStatCard(
                       'Accepted',
-                      acceptedConsultations.toString(),
+                      acceptedPayments.toString(),
                       Icons.thumb_up,
                       Colors.blue,
                     ),
@@ -536,8 +547,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                   ),
                   const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.trending_up,
+                        color: Colors.grey,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Commission: PKR ${totalCommission.toStringAsFixed(0)}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
                   Text(
-                    'From ${completedConsultations} completed consultations',
+                    'From ${completedPayments} completed payments',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
@@ -630,7 +655,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           child: StreamBuilder<QuerySnapshot>(
             stream: _firestore
-                .collection(AppConstants.lawyersCollection)
+                .collection(AppConstants.consultationsCollection)
                 .orderBy('createdAt', descending: true)
                 .limit(5)
                 .snapshots(),
@@ -649,46 +674,91 @@ class _AdminDashboardState extends State<AdminDashboard> {
               }
 
               return Column(
-                children: snapshot.data!.docs.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  final doc = entry.value;
+                children: snapshot.data!.docs.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
+                  final createdAt =
+                      (data['createdAt'] as Timestamp?)?.toDate() ??
+                      DateTime.now();
+                  final timeAgo = _getTimeAgo(createdAt);
+                  final status = data['status'] ?? 'pending';
+                  final amount =
+                      (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
 
-                  return Column(
-                    children: [
-                      ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: _getStatusColor(data['status']),
-                          child: Icon(
-                            data['status'] == 'pending'
-                                ? Icons.gavel
-                                : data['status'] == 'verified'
-                                ? Icons.verified_user
-                                : Icons.person_add,
-                            color: Colors.white,
+                  Color statusColor;
+                  IconData statusIcon;
+                  String statusText;
+
+                  switch (status) {
+                    case 'completed':
+                      statusColor = Colors.green;
+                      statusIcon = Icons.check_circle;
+                      statusText = 'Consultation completed';
+                      break;
+                    case 'accepted':
+                      statusColor = Colors.blue;
+                      statusIcon = Icons.thumb_up;
+                      statusText = 'Consultation accepted';
+                      break;
+                    case 'pending':
+                      statusColor = Colors.orange;
+                      statusIcon = Icons.pending;
+                      statusText = 'Consultation pending';
+                      break;
+                    case 'cancelled':
+                      statusColor = Colors.red;
+                      statusIcon = Icons.cancel;
+                      statusText = 'Consultation cancelled';
+                      break;
+                    default:
+                      statusColor = Colors.grey;
+                      statusIcon = Icons.help;
+                      statusText = 'Consultation updated';
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(statusIcon, color: statusColor, size: 16),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                statusText,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${data['category'] ?? 'Consultation'} - PKR ${amount.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
-                        title: Text(
-                          data['status'] == 'pending'
-                              ? 'Lawyer verification pending'
-                              : data['status'] == 'verified'
-                              ? 'Lawyer verified'
-                              : 'New lawyer registered',
-                        ),
-                        subtitle: Text(
-                          '${data['name']} - ${data['specialization']}',
-                        ),
-                        trailing: Text(
-                          _getTimeAgo(data['createdAt']),
+                        Text(
+                          timeAgo,
                           style: const TextStyle(
-                            color: Colors.grey,
                             fontSize: 12,
+                            color: Colors.grey,
                           ),
                         ),
-                      ),
-                      if (index < snapshot.data!.docs.length - 1)
-                        const Divider(),
-                    ],
+                      ],
+                    ),
                   );
                 }).toList(),
               );
@@ -1339,6 +1409,766 @@ class _AdminDashboardState extends State<AdminDashboard> {
         },
       ),
     );
+  }
+
+  Widget _buildConsultationsManagement() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text(
+          'Consultations Management',
+          style: TextStyle(
+            color: Color(0xFF8B4513),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF8B4513),
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() {});
+            },
+          ),
+        ],
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _firestore
+            .collection(AppConstants.consultationsCollection)
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text(
+                'No consultations found',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            );
+          }
+
+          final consultations = snapshot.data!.docs;
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: consultations.length,
+            itemBuilder: (context, index) {
+              final consultationData =
+                  consultations[index].data() as Map<String, dynamic>;
+              final consultation = ConsultationModel.fromFirestore(
+                consultations[index],
+              );
+
+              return _buildConsultationCard(consultation);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildConsultationCard(ConsultationModel consultation) {
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (consultation.status) {
+      case 'pending':
+        statusColor = Colors.orange;
+        statusIcon = Icons.pending;
+        break;
+      case 'accepted':
+        statusColor = Colors.green;
+        statusIcon = Icons.check_circle;
+        break;
+      case 'completed':
+        statusColor = Colors.blue;
+        statusIcon = Icons.done_all;
+        break;
+      case 'cancelled':
+        statusColor = Colors.red;
+        statusIcon = Icons.cancel;
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusIcon = Icons.help;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: statusColor),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, color: statusColor, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        consultation.status.toUpperCase(),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'PKR ${consultation.totalAmount.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF8B4513),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              consultation.category,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              consultation.description,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'User: ${consultation.userId}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.gavel, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Lawyer: ${consultation.lawyerId}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    '${consultation.consultationDate} at ${consultation.consultationTime}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Commission: PKR ${consultation.platformFee.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF8B4513),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _showConsultationDetails(consultation),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF8B4513),
+                      side: const BorderSide(color: Color(0xFF8B4513)),
+                    ),
+                    child: const Text('View Details'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (consultation.status == 'pending')
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _updateConsultationStatus(
+                        consultation.id,
+                        'accepted',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Accept'),
+                    ),
+                  ),
+                if (consultation.status == 'accepted')
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => _updateConsultationStatus(
+                        consultation.id,
+                        'completed',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Complete'),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsDashboard() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text(
+          'Analytics & Revenue',
+          style: TextStyle(
+            color: Color(0xFF8B4513),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF8B4513),
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildRevenueOverview(),
+            const SizedBox(height: 20),
+            _buildPlatformStats(),
+            const SizedBox(height: 20),
+            _buildRecentTransactions(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRevenueOverview() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('payments')
+          .where('paymentStatus', isEqualTo: 'completed')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        double totalRevenue = 0;
+        double totalCommission = 0;
+        int completedConsultations = 0;
+
+        for (var doc in snapshot.data!.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final amount = (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
+          totalRevenue += amount;
+          // Use platformFee from payments collection
+          final platformFee = (data['platformFee'] as num?)?.toDouble() ?? 0.0;
+          totalCommission += platformFee;
+          completedConsultations++;
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF8B4513), Color(0xFFA0522D)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B4513).withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Platform Revenue Overview',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildRevenueCard(
+                      'Total Revenue',
+                      'PKR ${totalRevenue.toStringAsFixed(0)}',
+                      Icons.attach_money,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildRevenueCard(
+                      'Platform Commission',
+                      'PKR ${totalCommission.toStringAsFixed(0)}',
+                      Icons.trending_up,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildRevenueCard(
+                      'Completed Consultations',
+                      completedConsultations.toString(),
+                      Icons.check_circle,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildRevenueCard(
+                      'Commission Rate',
+                      '5%',
+                      Icons.percent,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRevenueCard(String title, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.white, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 12, color: Colors.white70),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlatformStats() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Platform Statistics',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF8B4513),
+            ),
+          ),
+          const SizedBox(height: 16),
+          StreamBuilder<QuerySnapshot>(
+            stream: _firestore
+                .collection(AppConstants.usersCollection)
+                .snapshots(),
+            builder: (context, usersSnapshot) {
+              return StreamBuilder<QuerySnapshot>(
+                stream: _firestore
+                    .collection(AppConstants.lawyersCollection)
+                    .snapshots(),
+                builder: (context, lawyersSnapshot) {
+                  return StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection(AppConstants.consultationsCollection)
+                        .snapshots(),
+                    builder: (context, consultationsSnapshot) {
+                      int totalUsers = usersSnapshot.hasData
+                          ? usersSnapshot.data!.docs.length
+                          : 0;
+                      int totalLawyers = lawyersSnapshot.hasData
+                          ? lawyersSnapshot.data!.docs.length
+                          : 0;
+                      int totalConsultations = consultationsSnapshot.hasData
+                          ? consultationsSnapshot.data!.docs.length
+                          : 0;
+
+                      return Column(
+                        children: [
+                          _buildStatRow(
+                            'Total Users',
+                            totalUsers.toString(),
+                            Icons.people,
+                          ),
+                          _buildStatRow(
+                            'Total Lawyers',
+                            totalLawyers.toString(),
+                            Icons.gavel,
+                          ),
+                          _buildStatRow(
+                            'Total Consultations',
+                            totalConsultations.toString(),
+                            Icons.folder,
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF8B4513), size: 20),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF8B4513),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentTransactions() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Recent Transactions',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF8B4513),
+            ),
+          ),
+          const SizedBox(height: 16),
+          StreamBuilder<QuerySnapshot>(
+            stream: _firestore
+                .collection('payments')
+                .where('paymentStatus', isEqualTo: 'completed')
+                .orderBy('createdAt', descending: true)
+                .limit(5)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.data!.docs.isEmpty) {
+                return const Text(
+                  'No completed transactions yet',
+                  style: TextStyle(color: Colors.grey),
+                );
+              }
+
+              return Column(
+                children: snapshot.data!.docs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final amount =
+                      (data['totalAmount'] as num?)?.toDouble() ?? 0.0;
+                  final commission =
+                      (data['platformFee'] as num?)?.toDouble() ?? 0.0;
+                  final createdAt =
+                      (data['createdAt'] as Timestamp?)?.toDate() ??
+                      DateTime.now();
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8B4513).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.attach_money,
+                            color: Color(0xFF8B4513),
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                data['category'] ?? 'Payment',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'Commission: PKR ${commission.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'PKR ${amount.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF8B4513),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              '${createdAt.day}/${createdAt.month}/${createdAt.year}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showConsultationDetails(ConsultationModel consultation) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(consultation.category),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailRow('Status', consultation.status.toUpperCase()),
+              _buildDetailRow('User', consultation.userId),
+              _buildDetailRow('Lawyer', consultation.lawyerId),
+              _buildDetailRow(
+                'Amount',
+                'PKR ${consultation.totalAmount.toStringAsFixed(0)}',
+              ),
+              _buildDetailRow(
+                'Commission',
+                'PKR ${consultation.platformFee.toStringAsFixed(0)}',
+              ),
+              _buildDetailRow('Date', consultation.consultationDate),
+              _buildDetailRow('Time', consultation.consultationTime),
+              const SizedBox(height: 12),
+              const Text(
+                'Description:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(consultation.description),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _updateConsultationStatus(
+    String consultationId,
+    String newStatus,
+  ) async {
+    try {
+      await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .doc(consultationId)
+          .update({'status': newStatus});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Consultation status updated to $newStatus'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildSettings() {
@@ -3232,25 +4062,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             },
             child: const Text('Reset Password'),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(child: Text(value)),
         ],
       ),
     );
