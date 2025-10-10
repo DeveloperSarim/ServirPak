@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/lawyer_model.dart';
 import '../../models/review_model.dart';
@@ -417,12 +418,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
       actions: [
         IconButton(
           icon: const Icon(Icons.share),
-          onPressed: () {
-            // Share lawyer profile
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Profile shared!')));
-          },
+          onPressed: _shareLawyerProfile,
         ),
       ],
     );
@@ -970,5 +966,213 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
+  }
+
+  void _shareLawyerProfile() {
+    if (_currentLawyer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Lawyer information not available'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final lawyer = _currentLawyer!;
+    final rating = _calculateRating();
+    final successRate = _calculateSuccessRate();
+
+    String shareText =
+        '''
+🏛️ *${lawyer.name}* - Legal Expert
+
+📋 *Specialization:* ${lawyer.specialization}
+⭐ *Rating:* $rating/5.0
+🎯 *Success Rate:* $successRate%
+📞 *Experience:* ${lawyer.experience} years
+💼 *Consultations:* $_consultationCount completed
+
+📧 *Contact:* ${lawyer.email}
+📱 *Phone:* ${lawyer.phone}
+
+🔍 *About:*
+${lawyer.bio ?? 'Experienced legal professional ready to help with your legal needs.'}
+
+📱 *Find this lawyer on ServirPak App*
+Download ServirPak for legal consultations and expert advice!
+
+#ServirPak #LegalConsultation #Lawyer #${lawyer.specialization.replaceAll(' ', '')}
+''';
+
+    Clipboard.setData(ClipboardData(text: shareText));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Lawyer profile copied to clipboard!'),
+        backgroundColor: const Color(0xFF8B4513),
+        action: SnackBarAction(
+          label: 'Share',
+          textColor: Colors.white,
+          onPressed: () {
+            // Show share options dialog
+            _showShareOptions(shareText, lawyer.name);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showShareOptions(String shareText, String lawyerName) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Share ${lawyerName}\'s Profile',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF8B4513),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Share options
+            _buildShareOption(
+              icon: Icons.copy,
+              title: 'Copy to Clipboard',
+              subtitle: 'Copy profile details',
+              onTap: () {
+                Navigator.pop(context);
+                Clipboard.setData(ClipboardData(text: shareText));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Profile copied to clipboard!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+            ),
+
+            _buildShareOption(
+              icon: Icons.message,
+              title: 'Share via WhatsApp',
+              subtitle: 'Send via WhatsApp',
+              onTap: () {
+                Navigator.pop(context);
+                _shareViaWhatsApp(shareText);
+              },
+            ),
+
+            _buildShareOption(
+              icon: Icons.email,
+              title: 'Share via Email',
+              subtitle: 'Send via email',
+              onTap: () {
+                Navigator.pop(context);
+                _shareViaEmail(shareText, lawyerName);
+              },
+            ),
+
+            _buildShareOption(
+              icon: Icons.sms,
+              title: 'Share via SMS',
+              subtitle: 'Send via text message',
+              onTap: () {
+                Navigator.pop(context);
+                _shareViaSMS(shareText);
+              },
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF8B4513).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: const Color(0xFF8B4513)),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+      ),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: onTap,
+    );
+  }
+
+  void _shareViaWhatsApp(String shareText) {
+    // For WhatsApp sharing, we'll copy to clipboard and show instructions
+    Clipboard.setData(ClipboardData(text: shareText));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Profile copied! Open WhatsApp and paste to share.'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _shareViaEmail(String shareText, String lawyerName) {
+    // For email sharing, we'll copy to clipboard and show instructions
+    Clipboard.setData(ClipboardData(text: shareText));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Profile copied! Open your email app and paste to share.',
+        ),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _shareViaSMS(String shareText) {
+    // For SMS sharing, we'll copy to clipboard and show instructions
+    Clipboard.setData(ClipboardData(text: shareText));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Profile copied! Open your messaging app and paste to share.',
+        ),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 }
