@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'lawyer_dashboard.dart';
 
 class ConstitutionGuideScreen extends StatefulWidget {
   const ConstitutionGuideScreen({super.key});
@@ -36,7 +37,13 @@ class _ConstitutionGuideScreenState extends State<ConstitutionGuideScreen> {
       backgroundColor: const Color(0xFF8B4513),
       elevation: 0,
       leading: IconButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          // Navigate back to lawyer dashboard
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LawyerDashboard()),
+          );
+        },
         icon: const Icon(Icons.arrow_back, color: Colors.white),
       ),
       actions: [
@@ -196,9 +203,13 @@ class _ConstitutionGuideScreenState extends State<ConstitutionGuideScreen> {
             children: [
               IconButton(
                 onPressed: () {
-                  setState(() {
-                    _showPdfPreview = false;
-                  });
+                  // Navigate back to lawyer dashboard
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LawyerDashboard(),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
               ),
