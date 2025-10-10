@@ -45,6 +45,9 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
         _loadReviews();
       }
     });
+
+    // Test: Add a sample consultation for debugging
+    _addTestConsultation();
   }
 
   void _initializeLawyer() {
@@ -297,22 +300,77 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
 
   Future<void> _loadConsultationCount() async {
     try {
+      String? lawyerIdToUse;
+
+      // Determine which lawyer ID to use
       if (_currentLawyer != null) {
-        final querySnapshot = await FirebaseFirestore.instance
-            .collection(AppConstants.consultationsCollection)
-            .where('lawyerId', isEqualTo: _currentLawyer!.id)
+        lawyerIdToUse = _currentLawyer!.id;
+      } else if (widget.lawyerId != null) {
+        lawyerIdToUse = widget.lawyerId;
+      } else if (widget.lawyerData != null &&
+          widget.lawyerData!['id'] != null) {
+        lawyerIdToUse = widget.lawyerData!['id'] as String;
+      }
+
+      if (lawyerIdToUse != null && lawyerIdToUse.isNotEmpty) {
+        print(
+          '🔍 LawyerDetailsScreen: Loading consultation count for lawyer: $lawyerIdToUse',
+        );
+
+        // First, let's check all consultations to see what's in the database
+        final allConsultationsSnapshot = await FirebaseFirestore.instance
+            .collection('consultations')
             .get();
+
+        print(
+          '🔍 LawyerDetailsScreen: Total consultations in database: ${allConsultationsSnapshot.docs.length}',
+        );
+
+        if (allConsultationsSnapshot.docs.isNotEmpty) {
+          print('🔍 LawyerDetailsScreen: Sample consultation from database:');
+          print('🔍 - Document ID: ${allConsultationsSnapshot.docs.first.id}');
+          print(
+            '🔍 - Document data: ${allConsultationsSnapshot.docs.first.data()}',
+          );
+        }
+
+        // Now check for this specific lawyer
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection('consultations')
+            .where('lawyerId', isEqualTo: lawyerIdToUse)
+            .get();
+
+        print(
+          '🔍 LawyerDetailsScreen: Query result for lawyer $lawyerIdToUse:',
+        );
+        print('🔍 - Found ${querySnapshot.docs.length} consultations');
+
+        if (querySnapshot.docs.isNotEmpty) {
+          print('🔍 LawyerDetailsScreen: Sample consultation for this lawyer:');
+          print('🔍 - Document ID: ${querySnapshot.docs.first.id}');
+          print('🔍 - Document data: ${querySnapshot.docs.first.data()}');
+        }
 
         setState(() {
           _consultationCount = querySnapshot.docs.length;
         });
 
         print(
-          '🔍 LawyerDetailsScreen: Loaded ${_consultationCount} consultations for ${_currentLawyer!.name}',
+          '🔍 LawyerDetailsScreen: Loaded ${_consultationCount} consultations for lawyer: $lawyerIdToUse',
         );
+      } else {
+        print(
+          '⚠️ LawyerDetailsScreen: No valid lawyer ID found for loading consultation count',
+        );
+        setState(() {
+          _consultationCount = 0;
+        });
       }
     } catch (e) {
       print('❌ Error loading consultation count: $e');
+      setState(() {
+        _consultationCount = 0;
+      });
     }
   }
 
@@ -520,13 +578,7 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    'Consultations',
-                    '$_consultationCount',
-                    Icons.handshake,
-                  ),
-                ),
+                Expanded(child: _buildConsultationCountCard()),
               ],
             ),
           ],
@@ -561,6 +613,108 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _addTestConsultation() async {
+    try {
+      String? lawyerIdToUse;
+
+      // Determine which lawyer ID to use
+      if (_currentLawyer != null) {
+        lawyerIdToUse = _currentLawyer!.id;
+      } else if (widget.lawyerId != null) {
+        lawyerIdToUse = widget.lawyerId;
+      } else if (widget.lawyerData != null &&
+          widget.lawyerData!['id'] != null) {
+        lawyerIdToUse = widget.lawyerData!['id'] as String;
+      }
+
+      if (lawyerIdToUse != null && lawyerIdToUse.isNotEmpty) {
+        print(
+          '🔍 LawyerDetailsScreen: Adding test consultation for lawyer: $lawyerIdToUse',
+        );
+
+        await FirebaseFirestore.instance.collection('consultations').add({
+          'lawyerId': lawyerIdToUse,
+          'userId': 'test_user_123',
+          'status': 'completed',
+          'price': 100.0,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          'description': 'Test consultation for debugging',
+          'category': 'General Legal Advice',
+        });
+
+        print('🔍 LawyerDetailsScreen: Test consultation added successfully');
+      }
+    } catch (e) {
+      print('❌ Error adding test consultation: $e');
+    }
+  }
+
+  Widget _buildConsultationCountCard() {
+    String? lawyerIdToUse;
+
+    // Determine which lawyer ID to use
+    if (_currentLawyer != null) {
+      lawyerIdToUse = _currentLawyer!.id;
+    } else if (widget.lawyerId != null) {
+      lawyerIdToUse = widget.lawyerId;
+    } else if (widget.lawyerData != null && widget.lawyerData!['id'] != null) {
+      lawyerIdToUse = widget.lawyerData!['id'] as String;
+    }
+
+    if (lawyerIdToUse == null || lawyerIdToUse.isEmpty) {
+      return _buildStatCard('Consultations', '0', Icons.handshake);
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('consultations')
+          .where('lawyerId', isEqualTo: lawyerIdToUse)
+          .snapshots(),
+      builder: (context, snapshot) {
+        int consultationCount = 0;
+
+        print('🔍 LawyerDetailsScreen: StreamBuilder snapshot state:');
+        print('🔍 - hasData: ${snapshot.hasData}');
+        print('🔍 - hasError: ${snapshot.hasError}');
+        print('🔍 - connectionState: ${snapshot.connectionState}');
+        print('🔍 - lawyerIdToUse: $lawyerIdToUse');
+
+        if (snapshot.hasData) {
+          consultationCount = snapshot.data!.docs.length;
+          print(
+            '🔍 LawyerDetailsScreen: Found ${snapshot.data!.docs.length} consultation documents',
+          );
+
+          // Debug: Print first few documents to see structure
+          if (snapshot.data!.docs.isNotEmpty) {
+            print('🔍 LawyerDetailsScreen: Sample consultation document:');
+            print('🔍 - Document ID: ${snapshot.data!.docs.first.id}');
+            print('🔍 - Document data: ${snapshot.data!.docs.first.data()}');
+          }
+
+          print(
+            '🔍 LawyerDetailsScreen: Real-time consultation count: $consultationCount',
+          );
+        } else if (snapshot.hasError) {
+          print('❌ Error loading consultation count: ${snapshot.error}');
+          consultationCount = _consultationCount; // Fallback to cached value
+        } else {
+          print(
+            '🔍 LawyerDetailsScreen: No data yet, using cached count: $_consultationCount',
+          );
+          consultationCount = _consultationCount; // Fallback to cached value
+        }
+
+        return _buildStatCard(
+          'Consultations',
+          '$consultationCount',
+          Icons.handshake,
+        );
+      },
     );
   }
 
