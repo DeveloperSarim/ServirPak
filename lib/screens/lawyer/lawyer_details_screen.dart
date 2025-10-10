@@ -4,7 +4,6 @@ import '../../models/lawyer_model.dart';
 import '../../models/review_model.dart';
 import '../../services/review_service.dart';
 import '../../constants/app_constants.dart';
-import '../user/lawyer_booking_screen.dart';
 
 class LawyerDetailsScreen extends StatefulWidget {
   final LawyerModel? lawyer;
@@ -406,7 +405,6 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
           ),
         ],
       ),
-      floatingActionButton: _buildBookConsultationButton(),
     );
   }
 
@@ -676,63 +674,6 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
     );
   }
 
-  Future<void> _seedSampleReviews() async {
-    try {
-      String? lawyerIdToUse;
-
-      // Determine which lawyer ID to use
-      if (_currentLawyer != null) {
-        lawyerIdToUse = _currentLawyer!.id;
-      } else if (widget.lawyerId != null) {
-        lawyerIdToUse = widget.lawyerId;
-      } else if (widget.lawyerData != null &&
-          widget.lawyerData!['id'] != null) {
-        lawyerIdToUse = widget.lawyerData!['id'] as String;
-      }
-
-      if (lawyerIdToUse != null && lawyerIdToUse.isNotEmpty) {
-        print(
-          '🔍 LawyerDetailsScreen: Seeding sample reviews for lawyer: $lawyerIdToUse',
-        );
-        await _reviewService.seedSampleReviews(lawyerIdToUse);
-
-        // Reload reviews after seeding
-        await _loadReviews();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Sample reviews added successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        print('⚠️ LawyerDetailsScreen: No valid lawyer ID for seeding reviews');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Unable to add sample reviews - no lawyer ID found',
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      print('❌ LawyerDetailsScreen: Error seeding sample reviews: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error adding sample reviews: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   Widget _buildReviewCard(ReviewModel review) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -987,40 +928,6 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
           size: 20,
         );
       }),
-    );
-  }
-
-  Widget _buildBookConsultationButton() {
-    return FloatingActionButton.extended(
-      onPressed: () {
-        // Navigate to consultation booking screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LawyerBookingScreen(
-              lawyerId: _currentLawyer?.id ?? widget.lawyerId ?? '',
-              lawyerData: _currentLawyer != null
-                  ? {
-                      'id': _currentLawyer!.id,
-                      'userId': _currentLawyer!.userId,
-                      'name': _currentLawyer!.name,
-                      'email': _currentLawyer!.email,
-                      'phone': _currentLawyer!.phone,
-                      'specialization': _currentLawyer!.specialization,
-                      'experience': _currentLawyer!.experience,
-                      'rating': _currentLawyer!.rating,
-                      'profileImage': _currentLawyer!.profileImage,
-                      'consultationFee': _currentLawyer!.consultationFee,
-                      'officeHours': _currentLawyer!.officeHours,
-                    }
-                  : widget.lawyerData ?? {},
-            ),
-          ),
-        );
-      },
-      backgroundColor: const Color(0xFF8B4513),
-      label: const Text('Book Consultation'),
-      icon: const Icon(Icons.calendar_today),
     );
   }
 
