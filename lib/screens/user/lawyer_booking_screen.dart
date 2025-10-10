@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/consultation_booking_service.dart';
 import 'payment_screen.dart';
 
@@ -285,7 +286,7 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
                       const Icon(Icons.work, color: Colors.grey, size: 20),
                       const SizedBox(width: 4),
                       Text(
-                        '${widget.lawyerData['experience'] ?? 0} years',
+                        _getCalculatedExperience(widget.lawyerData),
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -574,5 +575,32 @@ class _LawyerBookingScreenState extends State<LawyerBookingScreen> {
     _dateController.dispose();
     _timeController.dispose();
     super.dispose();
+  }
+
+  String _getCalculatedExperience(Map<String, dynamic> data) {
+    // Check if firstCaseDate exists
+    if (data['firstCaseDate'] != null) {
+      try {
+        final firstCaseDate = (data['firstCaseDate'] as Timestamp).toDate();
+        final now = DateTime.now();
+        final difference = now.difference(firstCaseDate);
+        final years = (difference.inDays / 365).floor();
+        final months = ((difference.inDays % 365) / 30).floor();
+
+        if (years > 0) {
+          return months > 0 ? '$years years $months months' : '$years years';
+        } else if (months > 0) {
+          return '$months months';
+        } else {
+          return 'Less than 1 month';
+        }
+      } catch (e) {
+        // Fallback to manual experience
+        return '${data['experience'] as String? ?? '0'} years';
+      }
+    }
+
+    // Fallback to manual experience
+    return '${data['experience'] as String? ?? '0'} years';
   }
 }

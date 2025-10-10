@@ -28,6 +28,7 @@ class LawyerModel {
   final String? consultationFee;
   final String? certifications;
   final String? awards;
+  final DateTime? firstCaseDate;
 
   LawyerModel({
     required this.id,
@@ -57,6 +58,7 @@ class LawyerModel {
     this.consultationFee,
     this.certifications,
     this.awards,
+    this.firstCaseDate,
   });
 
   factory LawyerModel.fromFirestore(DocumentSnapshot doc) {
@@ -104,6 +106,9 @@ class LawyerModel {
           : data['awards'] is String
           ? data['awards'] as String
           : null,
+      firstCaseDate: data['firstCaseDate'] != null
+          ? (data['firstCaseDate'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -135,6 +140,9 @@ class LawyerModel {
       'consultationFee': consultationFee,
       'certifications': certifications,
       'awards': awards,
+      'firstCaseDate': firstCaseDate != null
+          ? Timestamp.fromDate(firstCaseDate!)
+          : null,
     };
   }
 
@@ -166,6 +174,7 @@ class LawyerModel {
     String? consultationFee,
     String? certifications,
     String? awards,
+    DateTime? firstCaseDate,
   }) {
     return LawyerModel(
       id: id ?? this.id,
@@ -195,6 +204,7 @@ class LawyerModel {
       consultationFee: consultationFee ?? this.consultationFee,
       certifications: certifications ?? this.certifications,
       awards: awards ?? this.awards,
+      firstCaseDate: firstCaseDate ?? this.firstCaseDate,
     );
   }
 
@@ -203,4 +213,38 @@ class LawyerModel {
   bool get isPending => status == 'pending';
   bool get isRejected => status == 'rejected';
   bool get hasKycDocuments => kycDocuments.isNotEmpty;
+
+  // Calculate experience from first case date to current date
+  String get calculatedExperience {
+    if (firstCaseDate == null) {
+      // Fallback to manual experience if firstCaseDate is not set
+      return experience;
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(firstCaseDate!);
+    final years = (difference.inDays / 365).floor();
+    final months = ((difference.inDays % 365) / 30).floor();
+
+    if (years > 0) {
+      return months > 0 ? '$years years $months months' : '$years years';
+    } else if (months > 0) {
+      return '$months months';
+    } else {
+      return 'Less than 1 month';
+    }
+  }
+
+  // Get experience in years only (for display purposes)
+  int get experienceInYears {
+    if (firstCaseDate == null) {
+      // Try to parse existing experience string
+      final expMatch = RegExp(r'(\d+)').firstMatch(experience);
+      return expMatch != null ? int.parse(expMatch.group(1)!) : 0;
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(firstCaseDate!);
+    return (difference.inDays / 365).floor();
+  }
 }

@@ -289,6 +289,11 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
             '${_currentLawyer?.specialization ?? 'Legal Practice'} • ${_currentLawyer?.city ?? 'Location'}',
             style: const TextStyle(fontSize: 16, color: Colors.white70),
           ),
+          const SizedBox(height: 4),
+          Text(
+            'Experience: ${_currentLawyer?.calculatedExperience ?? _currentLawyer?.experience ?? '0 years'}',
+            style: const TextStyle(fontSize: 14, color: Colors.white60),
+          ),
         ],
       ),
     );

@@ -55,6 +55,7 @@ class _LawyerProfileManagementScreenState
   final _officeHoursController = TextEditingController();
   final _consultationFeeController = TextEditingController();
   final _languagesController = TextEditingController();
+  DateTime? _firstCaseDate;
 
   // Case studies
   final List<Map<String, String>> _caseStudies = [];
@@ -267,6 +268,7 @@ class _LawyerProfileManagementScreenState
       _officeHoursController.text = _currentLawyer!.officeHours ?? '';
       _consultationFeeController.text = _currentLawyer!.consultationFee ?? '';
       _languagesController.text = _currentLawyer!.languages?.join(', ') ?? '';
+      _firstCaseDate = _currentLawyer!.firstCaseDate;
     }
   }
 
@@ -300,6 +302,9 @@ class _LawyerProfileManagementScreenState
                 .split(',')
                 .map((e) => e.trim())
                 .toList(),
+            'firstCaseDate': _firstCaseDate != null
+                ? Timestamp.fromDate(_firstCaseDate!)
+                : null,
             'caseStudies': _caseStudies,
             'updatedAt': Timestamp.now(),
           });
@@ -886,7 +891,9 @@ class _LawyerProfileManagementScreenState
           Expanded(
             child: _buildStatItem(
               'Experience',
-              '${_currentLawyer?.experience ?? '0'} years',
+              _currentLawyer?.calculatedExperience ??
+                  _currentLawyer?.experience ??
+                  '0 years',
               Icons.schedule,
             ),
           ),
@@ -943,6 +950,7 @@ class _LawyerProfileManagementScreenState
               _experienceController,
               Icons.schedule,
             ),
+            _buildFirstCaseDateField(),
             _buildEditableField(
               'Bar Council Number',
               _barCouncilController,
@@ -1031,6 +1039,77 @@ class _LawyerProfileManagementScreenState
           ),
           const SizedBox(height: 16),
           ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFirstCaseDateField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'First Case Date',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, color: Color(0xFF8B4513)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _firstCaseDate != null
+                        ? '${_firstCaseDate!.day}/${_firstCaseDate!.month}/${_firstCaseDate!.year}'
+                        : 'Select your first case date',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _firstCaseDate != null
+                          ? Colors.black87
+                          : Colors.grey,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: _firstCaseDate ?? DateTime.now(),
+                      firstDate: DateTime(1950),
+                      lastDate: DateTime.now(),
+                    );
+                    if (date != null) {
+                      setState(() {
+                        _firstCaseDate = date;
+                      });
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.arrow_drop_down,
+                    color: Color(0xFF8B4513),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'This will be used to calculate your experience automatically',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
         ],
       ),
     );

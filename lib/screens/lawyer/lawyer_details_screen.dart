@@ -565,7 +565,9 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
                 Expanded(
                   child: _buildStatCard(
                     'Experience',
-                    _currentLawyer?.experience ?? '0 years',
+                    _currentLawyer?.calculatedExperience ??
+                        _currentLawyer?.experience ??
+                        '0 years',
                     Icons.work,
                   ),
                 ),

@@ -297,7 +297,7 @@ class _LawyerAnalyticsScreenState extends State<LawyerAnalyticsScreen> {
                 Expanded(
                   child: _buildMetricCard(
                     'Experience',
-                    '${widget.lawyer.experience} years',
+                    widget.lawyer.calculatedExperience,
                     Icons.work,
                     Colors.blue,
                     'Professional experience',

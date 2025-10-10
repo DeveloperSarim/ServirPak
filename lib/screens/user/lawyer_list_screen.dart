@@ -485,7 +485,7 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                           const Icon(Icons.work, color: Colors.grey, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${data['experience'] as String? ?? '0'} years',
+                            _getCalculatedExperience(data),
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
@@ -947,5 +947,32 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
     }
 
     return totalRating / reviews.length;
+  }
+
+  String _getCalculatedExperience(Map<String, dynamic> data) {
+    // Check if firstCaseDate exists
+    if (data['firstCaseDate'] != null) {
+      try {
+        final firstCaseDate = (data['firstCaseDate'] as Timestamp).toDate();
+        final now = DateTime.now();
+        final difference = now.difference(firstCaseDate);
+        final years = (difference.inDays / 365).floor();
+        final months = ((difference.inDays % 365) / 30).floor();
+
+        if (years > 0) {
+          return months > 0 ? '$years years $months months' : '$years years';
+        } else if (months > 0) {
+          return '$months months';
+        } else {
+          return 'Less than 1 month';
+        }
+      } catch (e) {
+        // Fallback to manual experience
+        return '${data['experience'] as String? ?? '0'} years';
+      }
+    }
+
+    // Fallback to manual experience
+    return '${data['experience'] as String? ?? '0'} years';
   }
 }
