@@ -15,6 +15,7 @@ import '../../services/demo_data_service.dart';
 import 'lawyer_profile_management_screen.dart';
 import 'lawyer_wallet_screen.dart';
 import 'constitution_guide_screen.dart';
+import '../../widgets/floating_ai_widget.dart';
 
 class LawyerDashboard extends StatefulWidget {
   const LawyerDashboard({super.key});
@@ -95,7 +96,7 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
     }
 
     return Scaffold(
-      body: _buildBody(),
+      body: Stack(children: [_buildBody(), const FloatingAIWidget()]),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
