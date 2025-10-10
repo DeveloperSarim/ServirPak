@@ -45,7 +45,7 @@ class _SimpleBookingScreenState extends State<SimpleBookingScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: Colors.black),
             onPressed: () => Navigator.pop(context),
           ),
         ],

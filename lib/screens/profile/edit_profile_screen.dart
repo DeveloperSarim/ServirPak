@@ -329,6 +329,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         title: const Text('Edit Profile'),
         backgroundColor: const Color(0xFF8B4513),
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _saveProfile,

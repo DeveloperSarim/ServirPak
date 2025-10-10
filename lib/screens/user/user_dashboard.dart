@@ -71,7 +71,7 @@ class _UserDashboardState extends State<UserDashboard> {
       backgroundColor: Colors.white,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.menu, color: Color(0xFF8B4513)),
+        icon: const Icon(Icons.menu, color: Colors.black),
         onPressed: () {
           _scaffoldKey.currentState?.openDrawer();
         },

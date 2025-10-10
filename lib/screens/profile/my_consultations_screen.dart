@@ -32,7 +32,7 @@ class _MyConsultationsScreenState extends State<MyConsultationsScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF8B4513)),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
             // If callback is provided, use it to navigate to home
             if (widget.onBackToHome != null) {

@@ -181,7 +181,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF8B4513)),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
         ),
         title: Row(
           children: [
