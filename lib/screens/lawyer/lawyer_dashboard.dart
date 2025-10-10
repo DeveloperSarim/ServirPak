@@ -14,6 +14,7 @@ import '../../utils/responsive_helper.dart';
 import '../../services/demo_data_service.dart';
 import 'lawyer_profile_management_screen.dart';
 import 'lawyer_wallet_screen.dart';
+import 'constitution_guide_screen.dart';
 
 class LawyerDashboard extends StatefulWidget {
   const LawyerDashboard({super.key});
@@ -113,6 +114,10 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
           ),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
           BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book),
+            label: 'Constitution',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet),
             label: 'Wallet',
           ),
@@ -138,12 +143,14 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
           ),
         );
       case 3:
+        return const ConstitutionGuideScreen();
+      case 4:
         return LawyerWalletScreen(
           lawyerId: _currentLawyer?.id ?? '',
           lawyerName: _currentLawyer?.name ?? '',
           lawyerEmail: _currentLawyer?.email ?? '',
         );
-      case 4:
+      case 5:
         return _buildProfile();
       default:
         return _buildMainDashboard();
