@@ -561,7 +561,20 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Help & Support'),
+        title: Row(
+          children: [
+            const Icon(Icons.help_outline, color: Color(0xFF8B4513)),
+            const SizedBox(width: 8),
+            const Text(
+              'Help & Support',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF8B4513),
+              ),
+            ),
+          ],
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: Column(
@@ -569,30 +582,79 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Your payment transactions',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                'Contact Information',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF8B4513),
+                ),
               ),
               const SizedBox(height: 16),
-              _buildPaymentItem(
-                'Consultation with Lawyer Ahmed',
-                'PKR 2,500',
-                'Completed',
-                '2024-01-15',
-                Colors.green,
+
+              // Support Email
+              _buildSupportItem(
+                Icons.email,
+                'Support Email',
+                'support@servirpak.com',
+                'Email us for any technical issues or general inquiries',
+                () => _launchEmail('support@servirpak.com'),
               ),
-              _buildPaymentItem(
-                'Legal Document Review',
-                'PKR 1,200',
-                'Completed',
-                '2024-01-10',
-                Colors.green,
+              const SizedBox(height: 12),
+
+              // Support Phone
+              _buildSupportItem(
+                Icons.phone,
+                'Support Phone',
+                '+92 300 1234567',
+                'Call us for urgent legal assistance',
+                () => _launchPhone('+923001234567'),
               ),
-              _buildPaymentItem(
-                'Case Consultation',
-                'PKR 3,000',
-                'Pending',
-                '2024-01-20',
-                Colors.orange,
+              const SizedBox(height: 12),
+
+              // Business Hours
+              _buildSupportItem(
+                Icons.access_time,
+                'Business Hours',
+                'Mon-Fri: 9:00 AM - 6:00 PM',
+                'Our support team is available during business hours',
+                null,
+              ),
+              const SizedBox(height: 12),
+
+              // WhatsApp Support
+              _buildSupportItem(
+                Icons.chat,
+                'WhatsApp Support',
+                '+92 300 1234567',
+                'Quick support via WhatsApp',
+                () => _launchWhatsApp('+923001234567'),
+              ),
+              const SizedBox(height: 16),
+
+              const Divider(),
+              const SizedBox(height: 12),
+
+              const Text(
+                'Frequently Asked Questions',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF8B4513),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              _buildFAQItem(
+                'How do I book a consultation?',
+                'Go to Find Lawyers, select a lawyer, and click Book Consultation.',
+              ),
+              _buildFAQItem(
+                'How do I make payments?',
+                'We accept credit/debit cards and bank transfers through secure payment gateways.',
+              ),
+              _buildFAQItem(
+                'Can I cancel a booking?',
+                'Yes, you can cancel bookings up to 24 hours before the scheduled time.',
               ),
             ],
           ),
@@ -600,72 +662,120 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text(
+              'Close',
+              style: TextStyle(color: Color(0xFF8B4513)),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentItem(
+  Widget _buildSupportItem(
+    IconData icon,
     String title,
-    String amount,
-    String status,
-    String date,
-    Color statusColor,
+    String value,
+    String description,
+    VoidCallback? onTap,
   ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF8B4513), size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: Color(0xFF8B4513),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Color(0xFF8B4513),
+              ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildFAQItem(String question, String answer) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-              Text(
-                amount,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF8B4513),
-                ),
-              ),
-            ],
+          Text(
+            '• $question',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(date, style: TextStyle(color: Colors.grey[600])),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          const SizedBox(height: 2),
+          Text(answer, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
         ],
+      ),
+    );
+  }
+
+  void _launchEmail(String email) {
+    // You can implement email launching here
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Opening email: $email'),
+        backgroundColor: const Color(0xFF8B4513),
+      ),
+    );
+  }
+
+  void _launchPhone(String phone) {
+    // You can implement phone calling here
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Calling: $phone'),
+        backgroundColor: const Color(0xFF8B4513),
+      ),
+    );
+  }
+
+  void _launchWhatsApp(String phone) {
+    // You can implement WhatsApp launching here
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Opening WhatsApp: $phone'),
+        backgroundColor: const Color(0xFF8B4513),
       ),
     );
   }
