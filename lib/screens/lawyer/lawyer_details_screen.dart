@@ -657,19 +657,6 @@ class _LawyerDetailsScreenState extends State<LawyerDetailsScreen>
               style: TextStyle(color: Colors.grey[500]),
             ),
             const SizedBox(height: 24),
-            // Add sample reviews button for testing
-            ElevatedButton.icon(
-              onPressed: _seedSampleReviews,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8B4513),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Sample Reviews (Testing)'),
-            ),
           ],
         ),
       );

@@ -2007,13 +2007,6 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  // Generate unique chat ID
-  String _generateChatId(String lawyerId, String userId) {
-    List<String> ids = [lawyerId, userId];
-    ids.sort();
-    return '${ids[0]}_${ids[1]}';
-  }
-
   Future<void> _logout() async {
     try {
       await AuthService.signOut();

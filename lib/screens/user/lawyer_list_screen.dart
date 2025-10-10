@@ -4,6 +4,7 @@ import '../../models/user_model.dart';
 import '../../models/chat_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/realtime_chat_service.dart';
+import '../../services/review_service.dart';
 import '../../constants/app_constants.dart';
 import 'lawyer_booking_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
@@ -476,15 +477,11 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
+                      // Reviews Overview Section
+                      _buildReviewsOverview(lawyerId),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${(data['rating'] as num?)?.toDouble() ?? 0.0}',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(width: 16),
                           const Icon(Icons.work, color: Colors.grey, size: 16),
                           const SizedBox(width: 4),
                           Text(
@@ -837,5 +834,118 @@ class _LawyerListScreenState extends State<LawyerListScreen> {
     List<String> ids = [lawyerId, userId];
     ids.sort();
     return '${ids[0]}_${ids[1]}';
+  }
+
+  // Build reviews overview section
+  Widget _buildReviewsOverview(String lawyerId) {
+    // Check if lawyer ID is valid
+    if (lawyerId.isEmpty) {
+      return Row(
+        children: [
+          const Icon(Icons.star, color: Colors.grey, size: 16),
+          const SizedBox(width: 4),
+          const Text(
+            'No reviews yet',
+            style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey),
+          ),
+        ],
+      );
+    }
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getLawyerReviews(lawyerId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Row(
+            children: [
+              const Icon(Icons.star, color: Colors.amber, size: 16),
+              const SizedBox(width: 4),
+              const Text(
+                'Loading...',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return Row(
+            children: [
+              const Icon(Icons.star, color: Colors.grey, size: 16),
+              const SizedBox(width: 4),
+              const Text(
+                'No reviews yet',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          );
+        }
+
+        final reviews = snapshot.data!;
+        final averageRating = _calculateAverageRating(reviews);
+        final reviewCount = reviews.length;
+
+        return Row(
+          children: [
+            const Icon(Icons.star, color: Colors.amber, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              averageRating.toStringAsFixed(1),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '($reviewCount reviews)',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Get lawyer reviews from Firebase
+  Future<List<Map<String, dynamic>>> _getLawyerReviews(String lawyerId) async {
+    try {
+      print('🔍 Getting reviews for lawyer: $lawyerId');
+      final reviewService = ReviewService();
+      final reviews = await reviewService.getLawyerReviews(lawyerId);
+      print('📊 Found ${reviews.length} reviews for lawyer: $lawyerId');
+
+      if (reviews.isNotEmpty) {
+        print(
+          '✅ Sample review: ${reviews.first.clientName} - ${reviews.first.rating} stars',
+        );
+      }
+
+      return reviews
+          .map(
+            (review) => {
+              'rating': review.rating,
+              'comment': review.comment,
+              'clientName': review.clientName,
+              'createdAt': review.createdAt,
+            },
+          )
+          .toList();
+    } catch (e) {
+      print('❌ Error getting lawyer reviews: $e');
+      return [];
+    }
+  }
+
+  // Calculate average rating from reviews
+  double _calculateAverageRating(List<Map<String, dynamic>> reviews) {
+    if (reviews.isEmpty) return 0.0;
+
+    double totalRating = 0.0;
+    for (var review in reviews) {
+      totalRating += (review['rating'] as double? ?? 0.0);
+    }
+
+    return totalRating / reviews.length;
   }
 }
