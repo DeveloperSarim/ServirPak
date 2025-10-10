@@ -550,101 +550,8 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
 
             const SizedBox(height: 12),
 
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showConsultationDetails(consultation),
-                    icon: const Icon(Icons.visibility, size: 16),
-                    label: const Text('View Details'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF8B4513),
-                      side: const BorderSide(color: Color(0xFF8B4513)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (consultation.status == AppConstants.pendingStatus) ...[
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _updateConsultationStatus(
-                        consultation.id,
-                        'accepted',
-                      ),
-                      icon: const Icon(Icons.check, size: 16),
-                      label: const Text('Accept'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _updateConsultationStatus(
-                        consultation.id,
-                        'rejected',
-                      ),
-                      icon: const Icon(Icons.close, size: 16),
-                      label: const Text('Reject'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ] else if (consultation.status == 'accepted') ...[
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _updateConsultationStatus(
-                        consultation.id,
-                        AppConstants.completedStatus,
-                      ),
-                      icon: const Icon(Icons.done_all, size: 16),
-                      label: const Text('Complete'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B4513),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-
-                // Cancel Button for Pending/Accepted consultations
-                if (consultation.status == AppConstants.pendingStatus ||
-                    consultation.status == 'accepted') ...[
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _showCancellationDialog(consultation),
-                      icon: const Icon(Icons.cancel, size: 16),
-                      label: const Text('Cancel'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange,
-                        side: const BorderSide(color: Colors.orange),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            // Action Buttons - Responsive Layout
+            _buildActionButtons(consultation),
 
             // Join Meeting Button (for accepted consultations)
             if (consultation.status == 'accepted') ...[
@@ -670,6 +577,167 @@ class _LawyerConsultationsScreenState extends State<LawyerConsultationsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildActionButtons(ConsultationModel consultation) {
+    // For pending status - show multiple buttons in responsive layout
+    if (consultation.status == AppConstants.pendingStatus) {
+      return Column(
+        children: [
+          // First row: View Details and Accept
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showConsultationDetails(consultation),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View Details'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF8B4513),
+                    side: const BorderSide(color: Color(0xFF8B4513)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () =>
+                      _updateConsultationStatus(consultation.id, 'accepted'),
+                  icon: const Icon(Icons.check, size: 16),
+                  label: const Text('Accept'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Second row: Reject and Cancel
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () =>
+                      _updateConsultationStatus(consultation.id, 'rejected'),
+                  icon: const Icon(Icons.close, size: 16),
+                  label: const Text('Reject'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showCancellationDialog(consultation),
+                  icon: const Icon(Icons.cancel, size: 16),
+                  label: const Text('Cancel'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                    side: const BorderSide(color: Colors.orange),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+    // For accepted status - show Complete and Cancel
+    else if (consultation.status == 'accepted') {
+      return Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _showConsultationDetails(consultation),
+              icon: const Icon(Icons.visibility, size: 16),
+              label: const Text('View Details'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF8B4513),
+                side: const BorderSide(color: Color(0xFF8B4513)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () => _updateConsultationStatus(
+                consultation.id,
+                AppConstants.completedStatus,
+              ),
+              icon: const Icon(Icons.done_all, size: 16),
+              label: const Text('Complete'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8B4513),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _showCancellationDialog(consultation),
+              icon: const Icon(Icons.cancel, size: 16),
+              label: const Text('Cancel'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.orange,
+                side: const BorderSide(color: Colors.orange),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    // For other statuses - show only View Details
+    else {
+      return SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => _showConsultationDetails(consultation),
+          icon: const Icon(Icons.visibility, size: 16),
+          label: const Text('View Details'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF8B4513),
+            side: const BorderSide(color: Color(0xFF8B4513)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      );
+    }
   }
 
   Color _getStatusColor(String status) {
