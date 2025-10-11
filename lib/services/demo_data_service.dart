@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/app_constants.dart';
-import 'chat_service.dart';
 
 class DemoDataService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -443,6 +442,50 @@ class DemoDataService {
       print('✅ Demo chat messages added successfully');
     } catch (e) {
       print('❌ Error adding demo chat messages: $e');
+    }
+  }
+
+  // Clear all demo chat messages
+  static Future<void> clearDemoChatMessages() async {
+    try {
+      print('🗑️ Clearing demo chat messages...');
+
+      // Get all chat messages
+      QuerySnapshot chatMessagesSnapshot = await _firestore
+          .collection('chat_messages')
+          .get();
+
+      // Delete all chat messages
+      for (var doc in chatMessagesSnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      print('✅ Demo chat messages cleared successfully');
+    } catch (e) {
+      print('❌ Error clearing demo chat messages: $e');
+    }
+  }
+
+  // Clear all demo data
+  static Future<void> clearAllDemoData() async {
+    try {
+      print('🗑️ Clearing all demo data...');
+
+      // Clear chat messages
+      await clearDemoChatMessages();
+
+      // Clear consultations
+      QuerySnapshot consultationsSnapshot = await _firestore
+          .collection(AppConstants.consultationsCollection)
+          .get();
+
+      for (var doc in consultationsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      print('✅ All demo data cleared successfully');
+    } catch (e) {
+      print('❌ Error clearing demo data: $e');
     }
   }
 }

@@ -27,8 +27,11 @@ class _UserChatScreenState extends State<UserChatScreen> {
     _loadCurrentUserId();
     _setupMessagesStream();
     _messageController.addListener(_onTextChanged);
+    // Auto-scroll to bottom when chat opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        _scrollToBottomImmediate();
+      });
     });
   }
 
@@ -65,15 +68,9 @@ class _UserChatScreenState extends State<UserChatScreen> {
     }
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottomImmediate() {
     if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
     }
   }
 
@@ -96,7 +93,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
 
     if (success) {
       _messageController.clear();
-      _scrollToBottom();
+      _scrollToBottomImmediate();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -335,6 +332,15 @@ class _UserChatScreenState extends State<UserChatScreen> {
                     ),
                   );
                 }
+
+                // Auto-scroll to bottom when new messages arrive
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (messages.isNotEmpty) {
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      _scrollToBottomImmediate();
+                    });
+                  }
+                });
 
                 return ListView.builder(
                   controller: _scrollController,

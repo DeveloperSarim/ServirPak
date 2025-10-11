@@ -28,7 +28,12 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollToBottom();
+    // Auto-scroll to bottom when chat opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        _scrollToBottomImmediate();
+      });
+    });
   }
 
   @override
@@ -38,16 +43,10 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+  void _scrollToBottomImmediate() {
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    }
   }
 
   @override
@@ -130,8 +129,13 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
                   return _buildEmptyChat();
                 }
 
+                // Auto-scroll to bottom when new messages arrive
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _scrollToBottom();
+                  if (snapshot.data!.docs.isNotEmpty) {
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      _scrollToBottomImmediate();
+                    });
+                  }
                 });
 
                 return ListView.builder(
@@ -239,12 +243,21 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    _formatTime(timestamp),
-                    style: TextStyle(
-                      color: isMe ? Colors.white70 : Colors.grey[500],
-                      fontSize: 10,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatTime(timestamp),
+                        style: TextStyle(
+                          color: isMe ? Colors.white70 : Colors.grey[500],
+                          fontSize: 10,
+                        ),
+                      ),
+                      if (isMe) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.done, size: 12, color: Colors.white70),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -342,6 +355,8 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
         senderId: AuthService.currentUser!.uid,
         content: message,
       );
+      // Auto-scroll after sending message
+      _scrollToBottomImmediate();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

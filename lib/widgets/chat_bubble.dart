@@ -83,10 +83,15 @@ class ChatBubble extends StatelessWidget {
                   style: const TextStyle(fontSize: 11, color: Colors.white70),
                 ),
                 const SizedBox(width: 4),
-                Icon(
-                  isRead ? Icons.done_all : Icons.done,
-                  size: 16,
-                  color: isRead ? Colors.lightBlue : Colors.white70,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isRead ? Icons.done_all : Icons.done,
+                      size: 14,
+                      color: isRead ? Colors.blue : Colors.white70,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -160,7 +165,7 @@ class ChatBubble extends StatelessWidget {
                           Icon(
                             isRead ? Icons.done_all : Icons.done,
                             size: 16,
-                            color: isRead ? Colors.lightBlue : Colors.grey,
+                            color: isRead ? Colors.blue : Colors.grey,
                           ),
                       ],
                     ),
@@ -260,7 +265,7 @@ class ChatBubble extends StatelessWidget {
                     Icon(
                       isRead ? Icons.done_all : Icons.done,
                       size: 16,
-                      color: isRead ? Colors.lightBlue : Colors.grey,
+                      color: isRead ? Colors.blue : Colors.grey,
                     ),
                 ],
               ),
