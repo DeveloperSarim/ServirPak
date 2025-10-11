@@ -3,9 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../constants/app_constants.dart';
 import '../../services/demo_data_service.dart';
+import '../../services/realtime_chat_service.dart';
+import '../../models/chat_model.dart';
 import '../auth/login_screen.dart';
 // import '../consultation/consultation_booking_screen.dart';
 import 'user_chat_list_screen.dart';
+import 'user_chat_screen.dart';
 import '../profile/user_profile_screen.dart';
 import '../profile/my_consultations_screen.dart';
 import 'lawyer_booking_screen.dart';
@@ -1106,7 +1109,29 @@ class _UserDashboardState extends State<UserDashboard> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _startChatWithLawyer(data, index),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    child: const Text(
+                      'Chat',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
@@ -1206,6 +1231,86 @@ class _UserDashboardState extends State<UserDashboard> {
         ),
       ),
     );
+  }
+
+  // Start chat with lawyer
+  Future<void> _startChatWithLawyer(
+    Map<String, dynamic> data,
+    int index,
+  ) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Get current user
+      final session = await AuthService.getSavedUserSession();
+      if (session == null) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please login to start chatting'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      String userId = session['userId'] as String;
+      String lawyerId = data['userId'] as String? ?? 'lawyer_$index';
+
+      // Extract lawyer information
+      String lawyerName = data['name'] as String? ?? 'Unknown Lawyer';
+      String lawyerEmail = data['email'] as String? ?? 'lawyer@servipak.com';
+      String? lawyerProfileImage = data['profileImage'] as String?;
+
+      // Create or get existing chat
+      await RealtimeChatService.createChatRealtime(
+        lawyerId: lawyerId,
+        userId: userId,
+      );
+
+      // Create ChatModel for navigation
+      ChatModel chat = ChatModel(
+        id: _generateChatId(lawyerId, userId),
+        lawyerId: lawyerId,
+        lawyerName: lawyerName,
+        lawyerEmail: lawyerEmail,
+        lawyerProfileImage: lawyerProfileImage,
+        userId: userId,
+        userName: session['name'] ?? 'User',
+        userEmail: session['email'] ?? 'user@servipak.com',
+        userProfileImage: session['profileImage'],
+        createdAt: DateTime.now(),
+        consultationIds: [],
+      );
+
+      Navigator.pop(context); // Close loading dialog
+
+      // Navigate to chat screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => UserChatScreen(chat: chat)),
+      );
+    } catch (e) {
+      Navigator.pop(context); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to start chat: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Generate unique chat ID
+  String _generateChatId(String lawyerId, String userId) {
+    List<String> ids = [lawyerId, userId];
+    ids.sort();
+    return '${ids[0]}_${ids[1]}';
   }
 
   Widget _buildFindLawyers() {
