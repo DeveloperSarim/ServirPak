@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
-import '../../services/consultation_service.dart';
-import '../../services/demo_data_service.dart';
 import '../../constants/app_constants.dart';
-import '../../models/consultation_model.dart';
-import '../../models/user_model.dart';
 import '../auth/login_screen.dart';
 // import '../consultation/consultation_booking_screen.dart';
 import 'user_chat_list_screen.dart';
 import '../profile/user_profile_screen.dart';
 import '../profile/my_consultations_screen.dart';
 import 'lawyer_booking_screen.dart';
-import 'lawyer_list_screen.dart';
 import '../lawyer/lawyer_details_screen.dart';
 import 'working_booking_demo.dart';
 import '../../widgets/floating_ai_widget.dart';
@@ -30,6 +25,8 @@ class _UserDashboardState extends State<UserDashboard> {
   final TextEditingController _searchController = TextEditingController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String? _currentUserId;
+  String? _selectedCategory;
+  String? _searchQuery;
 
   @override
   void initState() {
@@ -711,73 +708,87 @@ class _UserDashboardState extends State<UserDashboard> {
                     'name': 'Administrative Law',
                     'icon': Icons.gavel,
                     'color': Colors.red,
+                    'specialization': 'Administrative Law',
                   },
                   {
                     'name': 'Cannabis Law',
                     'icon': Icons.eco,
                     'color': Colors.green,
+                    'specialization': 'Cannabis Law',
                   },
                   {
                     'name': 'Commercial Law',
                     'icon': Icons.attach_money,
                     'color': Colors.blue,
+                    'specialization': 'Commercial Law',
                   },
                   {
                     'name': 'Criminal Law',
                     'icon': Icons.security,
                     'color': Colors.orange,
+                    'specialization': 'Criminal Law',
                   },
                   {
                     'name': 'Family Law',
                     'icon': Icons.family_restroom,
                     'color': const Color(0xFF8B4513),
+                    'specialization': 'Family Law',
                   },
                   {
                     'name': 'Property Law',
                     'icon': Icons.home,
                     'color': Colors.teal,
+                    'specialization': 'Property Law',
                   },
                 ];
 
                 final category = categories[index];
-                return Container(
-                  width: 100,
-                  margin: const EdgeInsets.only(right: 12),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                return GestureDetector(
+                  onTap: () {
+                    _onCategoryTap(
+                      category['name'] as String,
+                      category['specialization'] as String,
+                    );
+                  },
+                  child: Container(
+                    width: 100,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            category['icon'] as IconData,
+                            color: category['color'] as Color,
+                            size: 30,
+                          ),
                         ),
-                        child: Icon(
-                          category['icon'] as IconData,
-                          color: category['color'] as Color,
-                          size: 30,
+                        const SizedBox(height: 8),
+                        Text(
+                          category['name'] as String,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        category['name'] as String,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },
@@ -1189,505 +1200,246 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Widget _buildFindLawyers() {
-    return Center(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.search, size: 80, color: Color(0xFF8B4513)),
-          const SizedBox(height: 20),
-          const Text(
-            'Find Lawyers',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Browse and book consultations with qualified lawyers',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 30),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LawyerListScreen(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.search),
-            label: const Text('Browse Lawyers'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8B4513),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<List<ConsultationModel>> _getUserConsultations() async {
-    try {
-      print('🔍 Getting user consultations...');
-      var session = await AuthService.getSavedUserSession();
-      print('🔍 Session data: $session');
-
-      if (session == null || session.isEmpty) {
-        print('❌ No session found');
-        return [];
-      }
-
-      String userId = session['userId'] ?? '';
-      print('🔍 User ID: $userId');
-
-      if (userId.isEmpty) {
-        print('❌ User ID is empty');
-        return [];
-      }
-
-      List<ConsultationModel> consultations =
-          await ConsultationService.getConsultationsByUserId(userId);
-      print('✅ Found ${consultations.length} consultations');
-
-      return consultations;
-    } catch (e) {
-      print('❌ Error getting user consultations: $e');
-      return [];
-    }
-  }
-
-  Future<void> _addDemoConsultations() async {
-    try {
-      var session = await AuthService.getSavedUserSession();
-      if (session != null && session.isNotEmpty) {
-        String userId = session['userId'] ?? '';
-        if (userId.isNotEmpty) {
-          await DemoDataService.addDemoConsultationsForUser(userId);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Demo consultations added successfully!'),
-              backgroundColor: Color(0xFF8B4513),
-            ),
-          );
-          // Refresh the consultations list
-          setState(() {});
-        }
-      }
-    } catch (e) {
-      print('❌ Error adding demo consultations: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error adding demo consultations: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Widget _buildConsultationCard(ConsultationModel consultation) {
-    Color statusColor = _getStatusColor(consultation.status);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: statusColor,
-          child: Icon(_getStatusIcon(consultation.status), color: Colors.white),
-        ),
-        title: Text(
-          consultation.category,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(consultation.description),
-            const SizedBox(height: 4),
+          // Header with category filter
+          if (_selectedCategory != null) ...[
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    consultation.status.toUpperCase(),
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedCategory = null;
+                    });
+                  },
+                  icon: const Icon(Icons.arrow_back, color: Color(0xFF8B4513)),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                Expanded(
                   child: Text(
-                    consultation.type.toUpperCase(),
+                    '$_selectedCategory Lawyers',
                     style: const TextStyle(
-                      color: Colors.blue,
-                      fontSize: 10,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
+                      color: Color(0xFF8B4513),
                     ),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              'PKR ${consultation.price.toStringAsFixed(0)}',
-              style: const TextStyle(
+            const SizedBox(height: 16),
+          ] else ...[
+            const Text(
+              'Find Lawyers',
+              style: TextStyle(
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.green,
+                color: Colors.black87,
               ),
             ),
-            Text(
-              _formatDate(consultation.scheduledAt),
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
+            const SizedBox(height: 16),
           ],
-        ),
-        onTap: () {
-          // Navigate to chat if consultation is accepted
-          if (consultation.isAccepted) {
-            _openChatWithLawyer(consultation);
-          } else {
-            _showConsultationDetails(consultation);
-          }
-        },
+
+          // Search Bar
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onSubmitted: (value) {
+                      _performSearch(value);
+                    },
+                    onChanged: (value) {
+                      // Clear search when user types
+                      if (value.isEmpty) {
+                        setState(() {
+                          _searchQuery = null;
+                        });
+                      }
+                    },
+                    decoration: InputDecoration(
+                      hintText: _searchQuery != null
+                          ? 'Search results for "$_searchQuery"'
+                          : 'Search lawyers...',
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Color(0xFF8B4513),
+                      ),
+                      suffixIcon: _searchQuery != null
+                          ? IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _searchQuery = null;
+                                  _searchController.clear();
+                                });
+                              },
+                              icon: const Icon(Icons.clear, color: Colors.grey),
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: () {
+                  _performSearch(_searchController.text);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF8B4513),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                ),
+                child: const Text(
+                  'Search',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Lawyers List
+          StreamBuilder<QuerySnapshot>(
+            stream: _getLawyersStream(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              // Apply search filter
+              final filteredDocs = _filterLawyersBySearch(snapshot.data!.docs);
+
+              if (filteredDocs.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.search_off,
+                        size: 80,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _selectedCategory != null
+                            ? 'No $_selectedCategory lawyers found'
+                            : _searchQuery != null
+                            ? 'No lawyers found for "$_searchQuery"'
+                            : 'No verified lawyers available',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: MediaQuery.of(context).size.width > 600
+                      ? 2
+                      : 1,
+                  childAspectRatio: MediaQuery.of(context).size.width > 600
+                      ? 1.2
+                      : 2.5,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: filteredDocs.length,
+                itemBuilder: (context, index) {
+                  final doc = filteredDocs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  return _buildResponsiveLawyerCard(data, index);
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'accepted':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'completed':
-        return Colors.blue;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
+  // Get Lawyers Stream based on filters
+  Stream<QuerySnapshot> _getLawyersStream() {
+    Query query = _firestore
+        .collection(AppConstants.lawyersCollection)
+        .where('status', isEqualTo: AppConstants.verifiedStatus);
+
+    // Add category filter if selected
+    if (_selectedCategory != null) {
+      query = query.where('specialization', isEqualTo: _selectedCategory);
     }
+
+    return query.snapshots();
   }
 
-  IconData _getStatusIcon(String status) {
-    switch (status) {
-      case 'accepted':
-        return Icons.check_circle;
-      case 'pending':
-        return Icons.schedule;
-      case 'completed':
-        return Icons.done_all;
-      case 'cancelled':
-        return Icons.cancel;
-      default:
-        return Icons.help;
+  // Filter lawyers based on search query
+  List<DocumentSnapshot> _filterLawyersBySearch(List<DocumentSnapshot> docs) {
+    if (_searchQuery == null || _searchQuery!.isEmpty) {
+      return docs;
     }
+
+    return docs.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      final name = (data['name'] as String? ?? '').toLowerCase();
+      final specialization = (data['specialization'] as String? ?? '')
+          .toLowerCase();
+      final searchTerm = _searchQuery!.toLowerCase();
+
+      return name.contains(searchTerm) || specialization.contains(searchTerm);
+    }).toList();
   }
 
-  String _formatDate(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-  }
+  // Category Tap Handler
+  void _onCategoryTap(String categoryName, String specialization) {
+    // Navigate to Find Lawyers tab with category filter
+    setState(() {
+      _selectedIndex = 1;
+      _selectedCategory = specialization;
+      _searchQuery = null; // Clear search when selecting category
+    });
 
-  Future<UserModel?> _getCurrentUser() async {
-    try {
-      final session = await AuthService.getSavedUserSession();
-      if (session != null) {
-        return await AuthService.getUserById(session['userId'] as String);
-      }
-      return null;
-    } catch (e) {
-      print('❌ Error getting current user: $e');
-      return null;
-    }
-  }
-
-  // Emergency Dialog
-  void _showEmergencyDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Emergency Legal Help'),
-        content: const Text(
-          'Get immediate legal assistance for urgent matters.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _callEmergencyNumber();
-            },
-            child: const Text('Call Now'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _callEmergencyNumber() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Calling emergency legal helpline: +92-300-911-911'),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  // Document Review Dialog
-  void _showDocumentReviewDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Document Review'),
-        content: const Text(
-          'Upload your legal documents for professional review and feedback.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _uploadDocumentForReview();
-            },
-            child: const Text('Upload Document'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _uploadDocumentForReview() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Document upload feature opened'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  // Legal Advice Dialog
-  void _showLegalAdviceDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Legal Advice'),
-        content: const Text(
-          'Get professional legal advice from qualified lawyers.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _selectedIndex = 1); // Navigate to Find Lawyers
-            },
-            child: const Text('Find Lawyers'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Court Representation Dialog
-  void _showCourtRepresentationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Court Representation'),
-        content: const Text(
-          'Find experienced lawyers for court representation and litigation.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _searchCourtLawyers();
-            },
-            child: const Text('Find Court Lawyers'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _searchCourtLawyers() {
-    setState(() => _selectedIndex = 1); // Navigate to Find Lawyers
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Searching for court representation lawyers...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  // Contract Review Dialog
-  void _showContractReviewDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Contract Review'),
-        content: const Text(
-          'Get your contracts reviewed by legal experts for potential issues and improvements.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _startContractReview();
-            },
-            child: const Text('Start Review'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _startContractReview() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Contract review process started'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  // Property Law Dialog
-  void _showPropertyLawDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Property Law'),
-        content: const Text(
-          'Get assistance with property transactions, disputes, and legal matters.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _findPropertyLawyers();
-            },
-            child: const Text('Find Property Lawyers'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _findPropertyLawyers() {
-    setState(() => _selectedIndex = 1); // Navigate to Find Lawyers
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Searching for property law specialists...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  // Generic Action Dialog
-  void _showGenericActionDialog(String title) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text('Get professional assistance with $title matters.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _selectedIndex = 1); // Navigate to Find Lawyers
-            },
-            child: const Text('Find Lawyers'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Category Lawyers Dialog
-  void _showCategoryLawyersDialog(String category, String specialization) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('$category Lawyers'),
-        content: Text('Find qualified lawyers specializing in $category.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _searchCategoryLawyers(specialization);
-            },
-            child: const Text('Search Lawyers'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _searchCategoryLawyers(String specialization) {
-    setState(() => _selectedIndex = 1); // Navigate to Find Lawyers
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Searching for $specialization lawyers...'),
-        backgroundColor: Colors.blue,
+        content: Text('Showing $categoryName lawyers'),
+        backgroundColor: const Color(0xFF8B4513),
       ),
     );
   }
@@ -1739,108 +1491,12 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  // Chat and Consultation Handlers
-  void _openChatWithLawyer(ConsultationModel consultation) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Chat with Lawyer'),
-        content: Text(
-          'Start chatting with your lawyer for consultation: ${consultation.category}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _startChatSession(consultation);
-            },
-            child: const Text('Start Chat'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _startChatSession(ConsultationModel consultation) {
+  void _searchCategoryLawyers(String specialization) {
+    setState(() => _selectedIndex = 1); // Navigate to Find Lawyers
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Chat session started with lawyer'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _showConsultationDetails(ConsultationModel consultation) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Consultation Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Category: ${consultation.category}'),
-            Text('Type: ${consultation.type}'),
-            Text('Status: ${consultation.status}'),
-            Text('Price: PKR ${consultation.price.toStringAsFixed(0)}'),
-            Text('Scheduled: ${_formatDate(consultation.scheduledAt)}'),
-            if (consultation.description != null &&
-                consultation.description.isNotEmpty)
-              Text('Description: ${consultation.description}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          if (consultation.status == 'pending')
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _cancelConsultation(consultation);
-              },
-              child: const Text('Cancel'),
-            ),
-        ],
-      ),
-    );
-  }
-
-  void _cancelConsultation(ConsultationModel consultation) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel Consultation'),
-        content: const Text(
-          'Are you sure you want to cancel this consultation?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _confirmCancelConsultation(consultation);
-            },
-            child: const Text('Yes, Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmCancelConsultation(ConsultationModel consultation) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Consultation cancelled successfully'),
-        backgroundColor: Colors.orange,
+      SnackBar(
+        content: Text('Searching for $specialization lawyers...'),
+        backgroundColor: Colors.blue,
       ),
     );
   }
@@ -1858,10 +1514,11 @@ class _UserDashboardState extends State<UserDashboard> {
     }
 
     // Navigate to Find Lawyers tab with search query
-    setState(() => _selectedIndex = 1);
-
-    // Store search query for use in Find Lawyers section
-    _searchController.text = query;
+    setState(() {
+      _selectedIndex = 1;
+      _searchQuery = query.trim();
+      _selectedCategory = null; // Clear category filter when searching
+    });
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
