@@ -754,43 +754,43 @@ class _UserDashboardState extends State<UserDashboard> {
                     );
                   },
                   child: Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 12),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            category['icon'] as IconData,
-                            color: category['color'] as Color,
-                            size: 30,
-                          ),
+                  width: 100,
+                  margin: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          category['name'] as String,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        child: Icon(
+                          category['icon'] as IconData,
+                          color: category['color'] as Color,
+                          size: 30,
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        category['name'] as String,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     ),
                   ),
                 );
@@ -1298,8 +1298,8 @@ class _UserDashboardState extends State<UserDashboard> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Header with category filter
           if (_selectedCategory != null) ...[
             Row(
@@ -1330,7 +1330,7 @@ class _UserDashboardState extends State<UserDashboard> {
               'Find Lawyers',
               style: TextStyle(
                 fontSize: 24,
-                fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
@@ -1339,7 +1339,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
           // Search Bar
           Row(
-            children: [
+          children: [
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
@@ -1350,9 +1350,9 @@ class _UserDashboardState extends State<UserDashboard> {
                         color: Colors.grey.withOpacity(0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+            ),
+          ],
+        ),
                   child: TextField(
                     controller: _searchController,
                     onSubmitted: (value) {
@@ -1376,7 +1376,7 @@ class _UserDashboardState extends State<UserDashboard> {
                       ),
                       suffixIcon: _searchQuery != null
                           ? IconButton(
-                              onPressed: () {
+            onPressed: () {
                                 setState(() {
                                   _searchQuery = null;
                                   _searchController.clear();
@@ -1401,7 +1401,7 @@ class _UserDashboardState extends State<UserDashboard> {
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-                onPressed: () {
+            onPressed: () {
                   _performSearch(_searchController.text);
                 },
                 style: ElevatedButton.styleFrom(
@@ -1419,9 +1419,9 @@ class _UserDashboardState extends State<UserDashboard> {
                   'Search',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
-              ),
-            ],
           ),
+        ],
+      ),
 
           const SizedBox(height: 20),
 
@@ -1458,11 +1458,11 @@ class _UserDashboardState extends State<UserDashboard> {
                           color: Colors.grey,
                         ),
                         textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
+          ),
+        ],
+      ),
+    );
+  }
 
               return GridView.builder(
                 shrinkWrap: true,

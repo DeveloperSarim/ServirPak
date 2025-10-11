@@ -29,7 +29,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
     _messageController.addListener(_onTextChanged);
     // Auto-scroll to bottom when chat opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 1000), () {
+      Future.delayed(const Duration(milliseconds: 1500), () {
         _scrollToBottomImmediate();
       });
     });
@@ -336,7 +336,7 @@ class _UserChatScreenState extends State<UserChatScreen> {
                 // Auto-scroll to bottom when new messages arrive
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (messages.isNotEmpty) {
-                    Future.delayed(const Duration(milliseconds: 100), () {
+                    Future.delayed(const Duration(milliseconds: 200), () {
                       _scrollToBottomImmediate();
                     });
                   }
