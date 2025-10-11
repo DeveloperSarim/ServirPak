@@ -11,10 +11,8 @@ import 'lawyer_chat_list_screen.dart';
 import 'lawyer_consultations_screen.dart';
 import 'lawyer_chat_screen.dart';
 import '../../utils/responsive_helper.dart';
-import '../../services/demo_data_service.dart';
 import 'lawyer_profile_management_screen.dart';
 import 'lawyer_wallet_screen.dart';
-import 'constitution_guide_screen.dart';
 import '../../widgets/floating_ai_widget.dart';
 
 class LawyerDashboard extends StatefulWidget {
@@ -115,10 +113,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
           ),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
-            label: 'Constitution',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet),
             label: 'Wallet',
           ),
@@ -144,14 +138,12 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
           ),
         );
       case 3:
-        return const ConstitutionGuideScreen();
-      case 4:
         return LawyerWalletScreen(
           lawyerId: _currentLawyer?.id ?? '',
           lawyerName: _currentLawyer?.name ?? '',
           lawyerEmail: _currentLawyer?.email ?? '',
         );
-      case 5:
+      case 4:
         return _buildProfile();
       default:
         return _buildMainDashboard();
@@ -884,79 +876,6 @@ class _LawyerDashboardState extends State<LawyerDashboard> {
 
   Widget _buildProfile() {
     return const LawyerProfileManagementScreen();
-  }
-
-  Future<void> _clearDemoData() async {
-    try {
-      final session = await AuthService.getSavedUserSession();
-      String lawyerId = session['userId'] as String;
-
-      // Show confirmation dialog
-      bool? confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Clear Demo Data'),
-          content: const Text(
-            'Are you sure you want to clear all demo data? This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Clear', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
-      );
-
-      if (confirm == true) {
-        // Show loading dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const AlertDialog(
-            content: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 16),
-                Text('Clearing demo data...'),
-              ],
-            ),
-          ),
-        );
-
-        await DemoDataService.clearDemoData(lawyerId);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Demo data cleared successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        // Refresh data
-        await _loadLawyerData();
-      }
-    } catch (e) {
-      // Close loading dialog if open
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to clear demo data: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   // Show modal to start chat with users
