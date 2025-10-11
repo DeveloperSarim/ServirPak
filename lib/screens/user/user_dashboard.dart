@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../constants/app_constants.dart';
-import '../../services/demo_data_service.dart';
 import '../../services/realtime_chat_service.dart';
 import '../../models/chat_model.dart';
 import '../auth/login_screen.dart';
@@ -333,14 +332,6 @@ class _UserDashboardState extends State<UserDashboard> {
             },
           ),
           const Divider(),
-          ListTile(
-            leading: const Icon(Icons.delete_sweep, color: Colors.orange),
-            title: const Text('Clear Demo Data'),
-            onTap: () {
-              Navigator.pop(context);
-              _clearDemoData();
-            },
-          ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout'),
@@ -1248,16 +1239,6 @@ class _UserDashboardState extends State<UserDashboard> {
 
       // Get current user
       final session = await AuthService.getSavedUserSession();
-      if (session == null) {
-        Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please login to start chatting'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
 
       String userId = session['userId'] as String;
       String lawyerId = data['userId'] as String? ?? 'lawyer_$index';
@@ -1833,70 +1814,5 @@ class _UserDashboardState extends State<UserDashboard> {
 
     // Fallback to manual experience
     return '${data['experience'] as String? ?? '0'} years';
-  }
-
-  // Clear demo data function
-  Future<void> _clearDemoData() async {
-    try {
-      // Show confirmation dialog
-      bool? confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Clear Demo Data'),
-          content: const Text(
-            'Are you sure you want to clear all demo data? This will remove all demo chat messages and consultations.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Clear', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
-      );
-
-      if (confirm == true) {
-        // Show loading dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const AlertDialog(
-            content: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 16),
-                Text('Clearing demo data...'),
-              ],
-            ),
-          ),
-        );
-
-        await DemoDataService.clearAllDemoData();
-
-        if (mounted) {
-          Navigator.pop(context); // Close loading dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Demo data cleared successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to clear demo data: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 }
