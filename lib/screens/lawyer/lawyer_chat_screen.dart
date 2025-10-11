@@ -144,36 +144,6 @@ class _LawyerChatScreenState extends State<LawyerChatScreen> {
                   horizontal: 16,
                   vertical: 12,
                 ),
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        // TODO: Implement image picker
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Image picker coming soon!'),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.image, color: Color(0xFF8B4513)),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        // TODO: Implement document picker
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Document picker coming soon!'),
-                          ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.attach_file,
-                        color: Color(0xFF8B4513),
-                      ),
-                    ),
-                  ],
-                ),
               ),
               maxLines: null,
               textInputAction: TextInputAction.send,
